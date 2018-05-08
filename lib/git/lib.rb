@@ -795,6 +795,16 @@ module Git
       command('gc', ['--prune', '--aggressive', '--auto'])
     end
 
+    def fsck
+      begin
+        command('fsck')
+      rescue
+        return false
+      end
+
+      true
+    end
+
     # reads a tree into the current index file
     def read_tree(treeish, opts = {})
       arr_opts = []

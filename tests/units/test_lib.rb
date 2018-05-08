@@ -227,5 +227,26 @@ class TestLib < Test::Unit::TestCase
     assert(/^commit 935badc874edd62a8629aaf103418092c73f0a56.+\+nothing!$/m.match(@lib.show('gitsearch1')))
     assert(/^hello.+nothing!$/m.match(@lib.show('gitsearch1', 'scott/text.txt')))
   end
-  
+
+  def test_fsck
+    ret = @lib.fsck
+    assert_equal(ret, true)
+
+    # Corrupted
+    @wdir_corrupted = File.expand_path(File.join(@test_dir, 'corrupted'))
+    FileUtils.cp_r(@wdir, @wdir_corrupted)
+    # Remove first objects dir to corrupt the repo
+    obj_dir = File.join(@wdir_corrupted, '.git', 'objects')
+    Dir.foreach(obj_dir) do |filename|
+      next if filename == '.'
+      next if filename == '..'
+      FileUtils.rm_r(File.join(obj_dir, filename))
+      break
+    end
+
+    lib_corrupted = Git.open(@wdir_corrupted).lib
+    ret = lib_corrupted.fsck
+    assert_equal(ret, false)
+  end
+
 end
