@@ -16,6 +16,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'rake'
   s.add_development_dependency 'rdoc'
   s.add_development_dependency 'test-unit', '>=2', '< 4'
+  s.add_dependency 'sys-proctable', '~> 1.2', '>= 1.2.1'
 
   s.extra_rdoc_files = ['README.md']
   s.rdoc_options = ['--charset=UTF-8']

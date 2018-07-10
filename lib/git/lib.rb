@@ -1,4 +1,6 @@
 require 'tempfile'
+require 'sys/proctable'
+include Sys
 
 module Git
 
@@ -1024,10 +1026,31 @@ module Git
       arr_opts
     end
 
-    def run_command(git_cmd, &block)
-      return IO.popen(git_cmd, :err=>"/dev/null", &block) if block_given?
+    def kill_orphan_process(list_process, parent_pid)
+      list_process.each do |current_process|
+        if current_process.ppid == parent_pid
+          # Kill its child process first
+          kill_orphan_process(list_process, current_process.pid)
+        end
+      end
+      begin
+        Process.kill("TERM", parent_pid)
+      rescue Errno::ESRCH
+      end
+    end
 
-      io = IO.popen(git_cmd, :err=>"/dev/null")
+    def run_command(git_cmd, &block)
+      return IO.popen(git_cmd, :err => "/dev/null", &block) if block_given?
+      git_pid = 0
+      at_exit do
+        if git_pid > 0
+          process_output = ProcTable.ps
+          kill_orphan_process(process_output, git_pid)
+        end
+      end
+
+      io = IO.popen(git_cmd, :err => "/dev/null")
+      git_pid = io.pid
       output = io.read.chomp
       io.close
       output
