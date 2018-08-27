@@ -19,6 +19,7 @@ module Git
       @until = nil
       @between = nil
       @up_to = nil
+      @all = nil
     end
 
     def object(objectish)
@@ -79,6 +80,11 @@ module Git
       self.map { |c| c.to_s }.join("\n")
     end
 
+    def all
+      dirty_log
+      @all = true
+      return self
+    end
 
     # forces git log to run
 
@@ -126,7 +132,7 @@ module Git
         log = @base.lib.full_log_commits(:count => @count, :object => @object,
                                     :path_limiter => @path, :since => @since,
                                     :author => @author, :grep => @grep, :skip => @skip,
-                                    :until => @until, :between => @between, :up_to => @up_to)
+                                    :until => @until, :between => @between, :up_to => @up_to, :all => @all)
         @commits = log.map { |c| Git::Object::Commit.new(@base, c['sha'], c) }
       end
 
