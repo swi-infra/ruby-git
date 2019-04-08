@@ -1054,6 +1054,7 @@ module Git
       git_pid = io.pid
       output = io.read.chomp
       io.close
+      git_pid = 0
       output
     end
 
