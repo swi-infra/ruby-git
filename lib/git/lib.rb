@@ -427,6 +427,16 @@ module Git
         end
       end
     end
+    
+    def ls_remote_refs(opts=nil)
+      opts ||= ['.']
+      command_lines('ls-remote', opts, false)
+    end
+
+    def symbolic_ref(opts, dir=nil)
+      @git_dir = dir if dir
+      command_lines('symbolic-ref', opts, false)
+    end
 
     def ignored_files
       command_lines('ls-files', ['--others', '-i', '--exclude-standard'])
