@@ -496,6 +496,14 @@ module Git
       self.lib.ls_files(location)
     end
 
+    def ls_remote(opts=nil)
+      self.lib.ls_remote_refs(opts)
+    end
+
+    def symbolic_ref(opts)
+      self.lib.symbolic_ref(opts)
+    end
+
     def with_working(work_dir) # :yields: the Git::WorkingDirectory
       return_value = false
       old_working = @working_directory
