@@ -987,7 +987,10 @@ module Git
       end
 
       if (exitstatus == nil) || (exitstatus > 1) || (exitstatus == 1 && output != '')
-        raise Git::GitExecuteError.new(git_cmd + ':' + output.to_s)
+        puts "========================Git execute error========================".red
+        gitExecuteError = Git::GitExecuteError.new(git_cmd + ':' + output.to_s)
+        puts gitExecuteError.to_s.red
+        raise gitExecuteError
       end
 
       return output
