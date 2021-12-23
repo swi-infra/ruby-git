@@ -1085,7 +1085,8 @@ module Git
       global_opts = []
       global_opts << "--git-dir=#{@git_dir}" if !@git_dir.nil?
       global_opts << "--work-tree=#{@git_work_dir}" if !@git_work_dir.nil?
-      global_opts << ["-c", "color.ui=false"]
+      global_opts << %w[-c core.quotePath=true]
+      global_opts << %w[-c color.ui=false]
 
       opts = [opts].flatten.map {|s| escape(s) }.join(' ')
 
@@ -1226,5 +1227,38 @@ module Git
       RUBY_PLATFORM =~ win_platform_regex || RUBY_DESCRIPTION =~ win_platform_regex
     end
 
+    UNESCAPES = {
+      'a' => 0x07,
+      'b' => 0x08,
+      't' => 0x09,
+      'n' => 0x0a,
+      'v' => 0x0b,
+      'f' => 0x0c,
+      'r' => 0x0d,
+      'e' => 0x1b,
+      "\\" => 0x5c,
+      "\"" => 0x22,
+      "'" => 0x27
+    }
+
+    def self.unescape_path(path)
+      index = 0
+      bytes = []
+      while index < path.length
+        if path[index] == '\\'
+          if '0' <= path[index + 1] && path[index + 1] <= '7'
+            bytes << path[index + 1..index + 4].to_i(8)
+            index += 4
+          elsif UNESCAPES.include?(path[index + 1])
+            bytes << UNESCAPES[path[index + 1]]
+            index += 2
+          end
+        else
+          bytes << path[index].ord
+          index += 1
+        end
+      end
+      bytes.pack('c*').force_encoding(Encoding::UTF_8)
+    end
   end
 end
