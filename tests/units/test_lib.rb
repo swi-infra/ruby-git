@@ -51,7 +51,7 @@ class TestLib < Test::Unit::TestCase
     move_file(pre_commit_path, pre_commit_path_bak)
 
     # Adds a pre-commit file that should throw an error
-    create_file(pre_commit_path, 'echo Pre-commit file. Shoud not execute; exit 1') # Error when executed
+    create_file(pre_commit_path, 'exit 1') # Error when executed
     File.chmod(0111, pre_commit_path)
 
     create_file("#{@wdir}/test_file_2", 'content test_file_2')

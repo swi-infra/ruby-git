@@ -1103,10 +1103,13 @@ module Git
 
       exitstatus = nil
 
+      puts "command"
+
       with_custom_env_variables do
         command_thread = Thread.new do
           output = run_command(git_cmd, &block)
           exitstatus = $?.exitstatus
+          puts "$? = #{$?}, exitstatus: #{exitstatus}"
         end
         command_thread.join
       end
@@ -1183,7 +1186,12 @@ module Git
     def run_command(git_cmd, &block)
       return IO.popen(git_cmd, &block) if block_given?
 
-      `#{git_cmd}`.lines.map { |l| Git::EncodingUtils.normalize_encoding(l) }.join
+      puts 'run_command'
+
+      result = `#{git_cmd}`.lines.map { |l| Git::EncodingUtils.normalize_encoding(l) }.join
+      puts "result: #{result}"
+      puts "$? = #{$?}, exitstatus: #{$?.exitstatus}"
+      result
     end
 
     def escape(s)
