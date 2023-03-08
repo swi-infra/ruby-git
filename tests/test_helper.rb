@@ -2,6 +2,7 @@ require 'date'
 require 'fileutils'
 require 'minitar'
 require 'test/unit'
+require 'tmpdir'
 
 require "git"
 
@@ -52,17 +53,12 @@ class Test::Unit::TestCase
   end
 
   def in_temp_dir # :yields: the temporary dir's path
-    tmp_path = nil
-    while tmp_path.nil? || File.directory?(tmp_path)
-      filename = 'git_test' + Time.now.to_i.to_s + rand(300).to_s.rjust(3, '0')
-      tmp_path = File.join(Dir.tmpdir, filename)
+    Dir.mktmpdir do |tmpdir|
+      tmpdir_realpath = File.realpath(tmpdir)
+      Dir.chdir(tmpdir_realpath) do
+        yield tmpdir_realpath
+      end
     end
-    FileUtils.mkdir(tmp_path)
-    tmp_path = File.realpath(tmp_path)
-    FileUtils.cd tmp_path do
-      yield tmp_path
-    end
-    FileUtils.rm_r(tmp_path)
   end
 
   def create_file(path, content)

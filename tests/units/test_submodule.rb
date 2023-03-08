@@ -48,6 +48,8 @@ class TestSubmodule < Test::Unit::TestCase
 
       repo_files = submodule_repo.ls_files
       assert(repo_files.include?('subdir/README.md'))
+
+      # sleep 1
     end
   end
 end
