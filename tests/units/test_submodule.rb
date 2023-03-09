@@ -46,8 +46,11 @@ class TestSubmodule < Test::Unit::TestCase
 
       submodule_repo = assert_nothing_raised { Git.open('repo/submodule/subdir') }
 
-      # repo_files = submodule_repo.ls_files
-      # assert(repo_files.include?('subdir/README.md'))
+      repo_files = submodule_repo.ls_files
+      assert(repo_files.include?('subdir/README.md'))
+    ensure
+      FileUtils.rm_rf('repo') if Dir.exist?('repo')
+      FileUtils.rm_rf('submodule') if Dir.exist?('submodule')
     end
   end
 end
