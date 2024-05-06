@@ -107,14 +107,16 @@ Pass the `--all` option to `git log` as follows:
 This gem raises custom errors that derive from `Git::Error`. These errors are
 arranged in the following class heirarchy:
 
-Error heirarchy:
+Error heirarchy (all are defined in the `Git` module):
 
 ```text
 Error
-└── CommandLineError
-    ├── FailedError
-    └── SignaledError
-        └── TimeoutError
+├─> CommandLineError
+│   ├─> FailedError
+│   └─> SignaledError
+│       └─> TimeoutError
+├─> ProcessIOError
+└─> UnexpectedResultError
 ```
 
 Other standard errors may also be raised like `ArgumentError`. Each method should
@@ -123,8 +125,7 @@ document the errors it may raise.
 Description of each Error class:
 
 * `Error`: This catch-all error serves as the base class for other custom errors in this
-  gem. Errors of this class are raised when no more approriate specific error to
-  raise.
+  gem. This gem only raises errors that are a subclass of `Git::Error`.
 * `CommandLineError`: This error is raised when there's a problem executing the git
   command line. This gem will raise a more specific error depending on how the
   command line failed.
@@ -138,9 +139,12 @@ Description of each Error class:
   happens if the operation takes longer than the timeout duration configured in
   `Git.config.timeout` or via the `:timeout` parameter given in git methods that
   support this parameter.
+* `ProcessIOError`: An error was encountered reading or writing to a subprocess.
+* `UnexpectedResultError`: The command line ran without error but did not return
+  the expected results.
 
-`Git::GitExecuteError` remains as an alias for `Git::Error`. It is considered
-deprecated as of git-2.0.0.
+For backward compatability, `Git::GitExecuteError` remains as an alias for `Git::Error`. It is considered
+deprecated as of v2.0.0 and will be remove in v3.0.0.
 
 Here is an example of catching errors when using the git gem:
 
