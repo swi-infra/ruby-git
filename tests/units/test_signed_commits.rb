@@ -17,6 +17,8 @@ class TestSignedCommits < Test::Unit::TestCase
       `git config --local gpg.format ssh`
       `git config --local user.signingkey .git/test-key`
 
+      raise "ERROR: No .git/test-key file" unless File.exist?('.git/test-key')
+
       yield
     end
   end
