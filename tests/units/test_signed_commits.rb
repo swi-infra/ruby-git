@@ -12,10 +12,14 @@ class TestSignedCommits < Test::Unit::TestCase
 
   def in_repo_with_signing_config(&block)
     in_temp_dir do |path|
+      puts 'Setting up repo with ssh key'
+
       `git init`
-      `ssh-keygen -t dsa -N "" -C "test key" -f .git/test-key`
+      puts `ssh-keygen -t dsa -N "" -C "test key" -f .git/test-key`
       `git config --local gpg.format ssh`
       `git config --local user.signingkey .git/test-key`
+
+      puts "DONE"
 
       raise "ERROR: No .git/test-key file" unless File.exist?('.git/test-key')
 
