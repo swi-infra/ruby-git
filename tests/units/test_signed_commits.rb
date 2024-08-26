@@ -12,16 +12,13 @@ class TestSignedCommits < Test::Unit::TestCase
 
   def in_repo_with_signing_config(&block)
     in_temp_dir do |path|
-      # puts 'Setting up repo with ssh key'
-
       `git init`
-      `ssh-keygen -t dsa -N "" -C "test key" -f .git/test-key`
+      ssh_key_file = File.join('.git', 'test-key')
+      `ssh-keygen -t dsa -N "" -C "test key" -f #{ssh_key_file}`
       `git config --local gpg.format ssh`
-      `git config --local user.signingkey .git/test-key.pub`
+      `git config --local user.signingkey #{ssh_key_file}.pub`
 
-      # puts "DONE"
-
-      # raise "ERROR: No .git/test-key file" unless File.exist?('.git/test-key')
+      raise "ERROR: No .git/test-key file" unless File.exist?("#{ssh_key_file}.pub")
 
       yield
     end
