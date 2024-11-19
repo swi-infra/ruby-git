@@ -162,4 +162,54 @@ class Test::Unit::TestCase
     win_platform_regex = /mingw|mswin/
     RUBY_PLATFORM =~ win_platform_regex || RUBY_DESCRIPTION =~ win_platform_regex
   end
+
+  require 'delegate'
+
+  # A wrapper around a ProcessExecuter::Status that also includes command output
+  class RunResult < SimpleDelegator
+    # Create a new RunResult
+    # @param status [ProcessExecuter::Status] The status of the process
+    # @param out [String] The standard output of the process
+    # @param err [String] The standard error of the process
+    def initialize(status, out, err)
+      super(status)
+      @out = out
+      @err = err
+    end
+
+    # @return [String] The stdout output of the process
+    attr_reader :out
+
+    # @return [String] The stderr output of the process
+    attr_reader :err
+  end
+
+  # Run a command and return a status output
+  #
+  # @example
+  #   command = %w[git status]
+  #   status = run(command)
+  #   status.success? # => true
+  #   status.exitstatus # => 0
+  #   status.out # => "On branch master\nnothing to commit, working tree clean\n"
+  #   status.err # => ""
+  #
+  # @param command [Array<String>] The command to run
+  # @param raise_on_failure [Boolean] Raise an exception if the command fails
+  # @param failure_message [String] The message to use when raising an exception
+  #
+  # @return [RunResult] The result of running
+  #
+  def run_command(*command, raise_on_failure: true, failure_message: "#{command[0]} failed")
+    out_buffer = StringIO.new
+    out_pipe = ProcessExecuter::MonitoredPipe.new(out_buffer)
+    err_buffer = StringIO.new
+    err_pipe = ProcessExecuter::MonitoredPipe.new(err_buffer)
+
+    status = ProcessExecuter.spawn(*command, timeout: 5, out: out_pipe, err: err_pipe)
+
+    raise "#{failure_message}: #{err_buffer.string}" if raise_on_failure && !status.success?
+
+    RunResult.new(status, out_buffer.string, err_buffer.string)
+  end
 end
