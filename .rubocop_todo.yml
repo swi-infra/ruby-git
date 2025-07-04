@@ -6,6 +6,11 @@
 # Note that changes in the inspected code, or installation of new
 # versions of RuboCop, may require this file to be generated again.
 
+# # Offense count: 111
+# # Configuration parameters: CountComments, CountAsOne, AllowedMethods, AllowedPatterns.
+# Metrics/MethodLength:
+#   Max: 51
+
 # Offense count: 68
 # Configuration parameters: AllowedMethods, AllowedPatterns, CountRepeatedAttributes.
 Metrics/AbcSize:
@@ -20,11 +25,6 @@ Metrics/ClassLength:
 # Configuration parameters: AllowedMethods, AllowedPatterns.
 Metrics/CyclomaticComplexity:
   Max: 21
-
-# Offense count: 111
-# Configuration parameters: CountComments, CountAsOne, AllowedMethods, AllowedPatterns.
-Metrics/MethodLength:
-  Max: 51
 
 # Offense count: 12
 # Configuration parameters: AllowedMethods, AllowedPatterns.
