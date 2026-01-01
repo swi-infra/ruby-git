@@ -833,18 +833,32 @@ module Git
     #
     # @param objectish [String] The first commit or object to compare. Defaults to 'HEAD'.
     # @param obj2 [String, nil] The second commit or object to compare.
-    # @return [Git::Diff::Stats]
-    def diff_stats(objectish = 'HEAD', obj2 = nil)
-      Git::DiffStats.new(self, objectish, obj2)
+    # @param opts [Hash] Options to filter the diff.
+    # @option opts [String, Array<String>] :path_limiter Limit stats to specified path(s).
+    # @return [Git::DiffStats]
+    def diff_stats(objectish = 'HEAD', obj2 = nil, opts = {})
+      Git::DiffStats.new(self, objectish, obj2, opts[:path_limiter])
     end
 
     # Returns a Git::Diff::PathStatus object for accessing the name-status report.
     #
     # @param objectish [String] The first commit or object to compare. Defaults to 'HEAD'.
     # @param obj2 [String, nil] The second commit or object to compare.
-    # @return [Git::Diff::PathStatus]
-    def diff_path_status(objectish = 'HEAD', obj2 = nil)
-      Git::DiffPathStatus.new(self, objectish, obj2)
+    # @param opts [Hash] Options to filter the diff.
+    # @option opts [String, Array<String>] :path_limiter Limit status to specified path(s).
+    # @option opts [String, Array<String>] :path (deprecated) Legacy alias for :path_limiter.
+    # @return [Git::DiffPathStatus]
+    def diff_path_status(objectish = 'HEAD', obj2 = nil, opts = {})
+      path_limiter = if opts.key?(:path_limiter)
+                       opts[:path_limiter]
+                     elsif opts.key?(:path)
+                       Git::Deprecation.warn(
+                         'Git::Base#diff_path_status :path option is deprecated. Use :path_limiter instead.'
+                       )
+                       opts[:path]
+                     end
+
+      Git::DiffPathStatus.new(self, objectish, obj2, path_limiter)
     end
 
     # Provided for backwards compatibility

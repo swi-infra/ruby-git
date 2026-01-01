@@ -825,6 +825,42 @@ module Git
       raise ArgumentError, "Invalid #{arg_name}: '#{invalid_args.join("', '")}'"
     end
 
+    # Normalizes path specifications for Git commands
+    #
+    # Converts a single path or array of paths into a consistent array format
+    # suitable for appending to Git command arguments after '--'.
+    #
+    # @param pathspecs [String, Pathname, Array<String, Pathname>, nil] path(s) to normalize
+    # @param arg_name [String] name of the argument for error messages
+    # @return [Array<String>, nil] normalized array of path strings, or nil if empty/nil input
+    # @raise [ArgumentError] if any path doesn't respond to #to_s
+    #
+    def normalize_pathspecs(pathspecs, arg_name)
+      return nil unless pathspecs
+
+      normalized = pathspecs.is_a?(Array) ? pathspecs : [pathspecs]
+      unless normalized.all? { |path| path.respond_to?(:to_s) }
+        raise ArgumentError, "Invalid #{arg_name}: must be a String or Array of Strings"
+      end
+
+      normalized = normalized.map(&:to_s)
+      return nil if normalized.empty?
+
+      normalized
+    end
+
+    # Handle deprecated :path option in favor of :path_limiter
+    def handle_deprecated_path_option(opts)
+      if opts.key?(:path_limiter)
+        opts[:path_limiter]
+      elsif opts.key?(:path)
+        Git::Deprecation.warn(
+          'Git::Lib#diff_path_status :path option is deprecated. Use :path_limiter instead.'
+        )
+        opts[:path]
+      end
+    end
+
     DIFF_FULL_OPTION_MAP = [
       { type: :static, flag: '-p' },
       { keys: [:path_limiter], type: :validate_only }
@@ -837,8 +873,8 @@ module Git
       args = build_args(opts, DIFF_FULL_OPTION_MAP)
       args.push(obj1, obj2).compact!
 
-      if (path = opts[:path_limiter]) && path.is_a?(String)
-        args.push('--', path)
+      if (pathspecs = normalize_pathspecs(opts[:path_limiter], 'path limiter'))
+        args.push('--', *pathspecs)
       end
 
       command('diff', *args)
@@ -856,8 +892,8 @@ module Git
       args = build_args(opts, DIFF_STATS_OPTION_MAP)
       args.push(obj1, obj2).compact!
 
-      if (path = opts[:path_limiter]) && path.is_a?(String)
-        args.push('--', path)
+      if (pathspecs = normalize_pathspecs(opts[:path_limiter], 'path limiter'))
+        args.push('--', *pathspecs)
       end
 
       output_lines = command_lines('diff', *args)
@@ -866,6 +902,7 @@ module Git
 
     DIFF_PATH_STATUS_OPTION_MAP = [
       { type: :static, flag: '--name-status' },
+      { keys: [:path_limiter], type: :validate_only },
       { keys: [:path], type: :validate_only }
     ].freeze
 
@@ -875,7 +912,11 @@ module Git
 
       args = build_args(opts, DIFF_PATH_STATUS_OPTION_MAP)
       args.push(reference1, reference2).compact!
-      args.push('--', opts[:path]) if opts[:path]
+
+      path_limiter = handle_deprecated_path_option(opts)
+      if (pathspecs = normalize_pathspecs(path_limiter, 'path limiter'))
+        args.push('--', *pathspecs)
+      end
 
       parse_diff_path_status(args)
     end
