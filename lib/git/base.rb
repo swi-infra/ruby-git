@@ -563,6 +563,24 @@ module Git
       Git::Remote.new(self, name)
     end
 
+    # Configures which branches are fetched for a remote.
+    # Uses `git remote set-branches` to set or append fetch refspecs.
+    #
+    # @param [String] name the remote name (for example, "origin")
+    # @param [Array<String>] branches branch names or globs (for example, '*')
+    # @param [Boolean] add (false) when true, append to existing refspecs instead of replacing them
+    #
+    # @return [Git::Remote] the configured remote
+    #
+    # @raise [ArgumentError] if no branches are provided
+    # @raise [Git::FailedError] if the underlying git command fails
+    def remote_set_branches(name, *branches, add: false)
+      branch_list = branches.flatten
+      raise ArgumentError, 'branches are required' if branch_list.empty?
+
+      lib.remote_set_branches(name, branch_list, add: add)
+    end
+
     # removes a remote from this repository
     #
     # @git.remove_remote('scott_git')

@@ -59,6 +59,58 @@ class TestRemotes < Test::Unit::TestCase
     end
   end
 
+  def test_remote_set_branches_command
+    expected_command_line = ['remote', 'set-branches', '--add', 'origin', '*', {}]
+
+    assert_command_line_eq(expected_command_line) do |git|
+      git.remote_set_branches('origin', '*', add: true)
+    end
+  end
+
+  def test_remote_set_branches_command_without_add
+    expected_command_line = ['remote', 'set-branches', 'origin', 'feature', {}]
+
+    assert_command_line_eq(expected_command_line) do |git|
+      git.remote_set_branches('origin', 'feature')
+    end
+  end
+
+  def test_remote_set_branches_command_with_add_false
+    expected_command_line = ['remote', 'set-branches', 'origin', 'feature', {}]
+
+    assert_command_line_eq(expected_command_line) do |git|
+      git.remote_set_branches('origin', 'feature', add: false)
+    end
+  end
+
+  def test_remote_set_branches_fetches_additional_branch
+    in_temp_dir do |_path|
+      upstream = Git.clone(BARE_REPO_PATH, 'upstream', config: 'receive.denyCurrentBranch=ignore')
+      upstream.config('user.name', 'Test User')
+      upstream.config('user.email', 'test@example.com')
+
+      upstream.chdir do
+        default_branch = upstream.current_branch
+        upstream.branch('nondefault').checkout
+        new_file('nondefault.txt', 'branch content')
+        upstream.add('nondefault.txt')
+        upstream.commit('add nondefault branch', allow_empty: true)
+        upstream.checkout(default_branch)
+      end
+
+      local = Git.clone(upstream.dir.path, 'local', branch: upstream.current_branch, single_branch: true)
+      fetch_refspec = "+refs/heads/#{upstream.current_branch}:refs/remotes/origin/#{upstream.current_branch}"
+      local.config('remote.origin.fetch', fetch_refspec)
+
+      assert(!local.branches.remote.map(&:full).include?('remotes/origin/nondefault'))
+
+      local.remote_set_branches('origin', '*', add: true)
+      local.fetch
+
+      assert(local.branches.remote.map(&:full).include?('remotes/origin/nondefault'))
+    end
+  end
+
   def test_remote_fun
     in_temp_dir do |_path|
       loc = Git.clone(BARE_REPO_PATH, 'local')
