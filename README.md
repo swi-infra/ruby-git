@@ -559,12 +559,19 @@ This gem will be expected to function correctly on:
 
 - All non-EOL versions of the MRI Ruby on Mac, Linux, and Windows
 - The latest version of JRuby on Linux
-- The latest version of Truffle Ruby on Linus
+- The latest version of Truffle Ruby on Linux
 
-It is this project's intent to support the latest version of JRuby on Windows
-once the following JRuby bug is fixed:
+It is this project's intent to support the latest version of JRuby on Windows once
+Process.wait2 and Process.wait work correctly on this platform.
 
-jruby/jruby#7515
+Currently, JRuby on Windows does not capture and report the subprocess status via $?
+(or $CHILD_STATUS), Process.wait, or Process.wait2. These values always return `nil`
+for the status, preventing this gem from properly detecting command failures and
+timeouts.
+
+Run [this test
+workflow](https://github.com/jcouball/process_spawn_test/actions/workflows/main.yml)
+to see if the problem has been fixed in the latest version of JRuby.
 
 ## Git version support policy
 
