@@ -10,19 +10,21 @@ module Git
 
       @base = base
 
-      @base.lib.stashes_all.each do |indexed_message|
-        _index, message = indexed_message
-        @stashes.unshift(Git::Stash.new(@base, message, save: true))
+      @base.lib.stashes_all.each do |stash_info|
+        @stashes.unshift(Git::Stash.new(@base, stash_info.message, save: true))
       end
     end
 
     #
-    # Returns an multi-dimensional Array of elements that have been stash saved.
-    # Array is based on position and name. See Example
+    # Returns an Array of StashInfo objects for all stash entries.
     #
-    # @example Returns Array of items that have been stashed
-    #     .all - [0, "testing-stash-all"]]
-    # @return [Array]
+    # @example Returns Array of stash info objects
+    #     stashes = git.stashes.all
+    #     stashes.first.index   # => 0
+    #     stashes.first.message # => "WIP on main: abc123 Initial commit"
+    #
+    # @return [Array<Git::StashInfo>] array of stash info objects
+    #
     def all
       @base.lib.stashes_all
     end

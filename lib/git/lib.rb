@@ -25,6 +25,12 @@ require_relative 'commands/rm'
 require_relative 'commands/tag/create'
 require_relative 'commands/tag/delete'
 require_relative 'commands/tag/list'
+require_relative 'commands/stash/apply'
+require_relative 'commands/stash/clear'
+require_relative 'commands/stash/drop'
+require_relative 'commands/stash/list'
+require_relative 'commands/stash/pop'
+require_relative 'commands/stash/push'
 
 require 'git/command_line'
 require 'git/errors'
@@ -1181,29 +1187,82 @@ module Git
       command('am', *arr_opts)
     end
 
+    # List all stash entries
+    #
+    # @return [Array<Git::StashInfo>] array of stash info objects
+    #
+    # @note This method delegates to {Git::Commands::Stash::List}
+    #
     def stashes_all
-      stash_log_lines.each_with_index.map do |line, index|
-        parse_stash_log_line(line, index)
-      end
+      Git::Commands::Stash::List.new(self).call
     end
 
-    def stash_save(message)
-      output = command('stash', 'save', message)
-      output =~ /HEAD is now at/
+    # Push changes onto the stash
+    #
+    # @param message [String, nil] message for the stash entry
+    # @param options [Hash] command options (see {Git::Commands::Stash::Push#call})
+    #
+    # @return [Boolean] true if stash was created, false otherwise
+    #
+    # @note This method delegates to {Git::Commands::Stash::Push}
+    #
+    # rubocop:disable Naming/PredicateMethod
+    def stash_save(message = nil, options = {})
+      # rubocop:enable Naming/PredicateMethod
+      opts = message ? { message: message }.merge(options) : options
+      output = Git::Commands::Stash::Push.new(self).call(**opts)
+      return false if output&.include?('No local changes to save')
+
+      true
     end
 
-    def stash_apply(id = nil)
-      if id
-        command('stash', 'apply', id)
-      else
-        command('stash', 'apply')
-      end
+    # Apply stashed changes
+    #
+    # @param id [String, nil] stash reference to apply
+    # @param options [Hash] command options (see {Git::Commands::Stash::Apply#call})
+    #
+    # @note This method delegates to {Git::Commands::Stash::Apply}
+    #
+    def stash_apply(id = nil, options = {})
+      Git::Commands::Stash::Apply.new(self).call(id, **options)
     end
 
+    # Clear all stash entries
+    #
+    # @note This method delegates to {Git::Commands::Stash::Clear}
+    #
     def stash_clear
-      command('stash', 'clear')
+      Git::Commands::Stash::Clear.new(self).call
     end
 
+    # Pop stashed changes
+    #
+    # @param id [String, nil] stash reference to pop
+    # @param options [Hash] command options (see {Git::Commands::Stash::Pop#call})
+    #
+    # @note This method delegates to {Git::Commands::Stash::Pop}
+    #
+    def stash_pop(id = nil, options = {})
+      Git::Commands::Stash::Pop.new(self).call(id, **options)
+    end
+
+    # Drop a stash entry
+    #
+    # @param id [String, nil] stash reference to drop
+    # @param options [Hash] command options (see {Git::Commands::Stash::Drop#call})
+    #
+    # @note This method delegates to {Git::Commands::Stash::Drop}
+    #
+    def stash_drop(id = nil, options = {})
+      Git::Commands::Stash::Drop.new(self).call(id, **options)
+    end
+
+    # List stash entries (raw output)
+    #
+    # @return [String] raw git stash list output
+    #
+    # @deprecated Use {#stashes_all} instead for parsed output
+    #
     def stash_list
       command('stash', 'list')
     end
@@ -1933,6 +1992,7 @@ module Git
       [type, name, value]
     end
 
+    # @deprecated No longer used - stash parsing moved to Git::Commands::Stash::List
     def stash_log_lines
       path = File.join(@git_dir, 'logs/refs/stash')
       return [] unless File.exist?(path)
@@ -1940,6 +2000,7 @@ module Git
       File.readlines(path, chomp: true)
     end
 
+    # @deprecated No longer used - stash parsing moved to Git::Commands::Stash::List
     def parse_stash_log_line(line, index)
       full_message = line.split("\t", 2).last
       match_data = full_message.match(/^[^:]+:(.*)$/)

@@ -44,11 +44,10 @@ class TestStashes < Test::Unit::TestCase
 
       stashes = assert_nothing_raised { g.lib.stashes_all }
 
-      expected_stashes = [
-        [0, 'testing-stash-all']
-      ]
-
-      assert_equal(expected_stashes, stashes)
+      assert_equal(1, stashes.size)
+      assert_kind_of(Git::StashInfo, stashes.first)
+      assert_equal(0, stashes.first.index)
+      assert_match(/testing-stash-all/, stashes.first.message)
     end
   end
 
@@ -70,11 +69,10 @@ class TestStashes < Test::Unit::TestCase
 
       stashes = assert_nothing_raised { g.lib.stashes_all }
 
-      expected_stashes = [
-        [0, 'saving: testing-stash-all']
-      ]
-
-      assert_equal(expected_stashes, stashes)
+      assert_equal(1, stashes.size)
+      assert_kind_of(Git::StashInfo, stashes.first)
+      assert_equal(0, stashes.first.index)
+      assert_match(/saving: testing-stash-all/, stashes.first.message)
     end
   end
 
@@ -96,11 +94,11 @@ class TestStashes < Test::Unit::TestCase
 
       stashes = assert_nothing_raised { git.lib.stashes_all }
 
-      expected_stashes = [
-        [0, 'custom message']
-      ]
-
-      assert_equal(expected_stashes, stashes)
+      assert_equal(1, stashes.size)
+      assert_kind_of(Git::StashInfo, stashes.first)
+      assert_equal(0, stashes.first.index)
+      assert_nil(stashes.first.branch)
+      assert_equal('custom message', stashes.first.message)
     end
   end
 
@@ -112,7 +110,7 @@ class TestStashes < Test::Unit::TestCase
       `git commit -m "First commit"`
       `echo "update" > file1.txt`
       commit = `git stash create "stash message"`.chomp
-      # Create a stash with this message: 'custom message'
+      # Create a stash with this message: 'testing: custom message'
       `git stash store -m "testing: custom message" #{commit}`
 
       # puts `cat .git/logs/refs/stash`
@@ -122,11 +120,11 @@ class TestStashes < Test::Unit::TestCase
 
       stashes = assert_nothing_raised { git.lib.stashes_all }
 
-      expected_stashes = [
-        [0, 'custom message']
-      ]
-
-      assert_equal(expected_stashes, stashes)
+      assert_equal(1, stashes.size)
+      assert_kind_of(Git::StashInfo, stashes.first)
+      assert_equal(0, stashes.first.index)
+      assert_nil(stashes.first.branch)
+      assert_equal('testing: custom message', stashes.first.message)
     end
   end
 end
