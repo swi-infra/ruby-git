@@ -419,7 +419,7 @@ module Git
       ARGS = Arguments.define do
         flag :all
         flag :force
-        positional :paths, variadic: true, default: ['.'], separator: '--'
+        positional :paths, repeatable: true, default: ['.'], separator: '--'
       end
 
       def initialize(execution_context)
@@ -447,7 +447,7 @@ end
 ```
 
 **Method Signature Convention**: The `#call` signature SHOULD, if possible, use
-anonymous variadic arguments for both positional and keyword arguments:
+anonymous repeatable arguments for both positional and keyword arguments:
 
 ```ruby
 def call(*, **)
