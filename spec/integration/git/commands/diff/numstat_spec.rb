@@ -9,46 +9,47 @@ RSpec.describe Git::Commands::Diff::Numstat, :integration do
   subject(:command) { described_class.new(execution_context) }
 
   describe '#call' do
-    # Tests focusing on numstat-specific output format and parsing
-    # (Basic diff scenarios are covered by Patch spec)
+    # Tests focusing on command execution and raw output format
+    # (Parsing logic is tested in parser specs; end-to-end integration in facade specs)
 
-    describe 'numstat output format' do
-      it 'returns DiffFileNumstatInfo objects' do
+    describe 'basic command execution' do
+      it 'returns CommandLineResult' do
         result = command.call('initial', 'after_modify')
 
-        expect(result.files.first).to be_a(Git::DiffFileNumstatInfo)
+        expect(result).to be_a(Git::CommandLineResult)
+        expect(result.stdout).not_to be_empty
       end
 
-      it 'provides insertions and deletions counts' do
+      it 'includes numstat format in output' do
         result = command.call('initial', 'after_modify')
 
-        file = result.files.first
-        expect(file.insertions).to be > 0
-        expect(file.deletions).to eq(0)
-        expect(file.path).to eq('README.md')
+        # Numstat format: <insertions>\t<deletions>\t<path>
+        expect(result.stdout).to match(/^\d+\t\d+\t.+$/)
+      end
+
+      it 'includes shortstat summary line' do
+        result = command.call('initial', 'after_modify')
+
+        # Shortstat format: " <n> files changed, <n> insertions(+), <n> deletions(-)"
+        expect(result.stdout).to match(/\d+ file.* changed, \d+ insertion/)
       end
     end
 
-    describe 'rename detection with brace syntax' do
-      it 'detects renamed files and provides src_path' do
+    describe 'rename detection' do
+      it 'shows renamed files with arrow syntax in output' do
         result = command.call('after_modify', 'after_rename')
 
-        file = result.files.first
-        expect(file.renamed?).to be true
-        expect(file.src_path).to eq('README.md')
-        expect(file.path).to eq('docs.md')
+        # Renamed files shown as: old_name => new_name
+        expect(result.stdout).to match(/.*=>.*$/)
       end
     end
 
     describe 'binary file handling' do
-      it 'reports dash (-) for binary files as zero' do
+      it 'shows dash (-) for binary files' do
         result = command.call('after_add', 'after_binary')
 
-        file = result.files.first
-        expect(file.path).to eq('image.png')
-        # Binary files show "-" which should be parsed as 0
-        expect(file.insertions).to eq(0)
-        expect(file.deletions).to eq(0)
+        # Binary files show "-\t-\t<path>"
+        expect(result.stdout).to match(/-\t-\timage\.png/)
       end
     end
 
@@ -56,33 +57,21 @@ RSpec.describe Git::Commands::Diff::Numstat, :integration do
       # Use after_utf8_rename on Windows since tab filename is skipped
       let(:multi_base_tag) { Gem.win_platform? ? 'after_utf8_rename' : 'after_tab_filename' }
 
-      it 'returns stats for all changed files' do
+      it 'includes all changed files in output' do
         result = command.call(multi_base_tag, 'after_multi')
 
-        expect(result.files.size).to eq(3)
-        paths = result.files.map(&:path)
-        expect(paths).to include('lib/main.rb')
-        expect(paths).to include('lib/helper.rb')
-        expect(paths).to include('CHANGELOG.md')
-      end
-
-      it 'calculates total insertions/deletions correctly' do
-        result = command.call(multi_base_tag, 'after_multi')
-
-        total_insertions = result.files.sum(&:insertions)
-        total_deletions = result.files.sum(&:deletions)
-
-        expect(result.total_insertions).to eq(total_insertions)
-        expect(result.total_deletions).to eq(total_deletions)
+        expect(result.stdout).to include('lib/main.rb')
+        expect(result.stdout).to include('lib/helper.rb')
+        expect(result.stdout).to include('CHANGELOG.md')
       end
     end
 
     describe 'files with spaces in paths' do
-      it 'correctly parses quoted paths with spaces' do
+      it 'includes paths with spaces in output' do
         result = command.call('after_mode_change', 'after_spaces')
 
-        file = result.files.first
-        expect(file.path).to eq('path with spaces/file name.txt')
+        # Paths with spaces may or may not be quoted in numstat output
+        expect(result.stdout).to include('path with spaces/file name.txt')
       end
     end
 
@@ -90,34 +79,39 @@ RSpec.describe Git::Commands::Diff::Numstat, :integration do
       it 'includes directory statistics when requested' do
         result = command.call('initial', 'after_multi', dirstat: true)
 
-        expect(result.dirstat).not_to be_nil
-        expect(result.dirstat.entries).not_to be_empty
+        # Dirstat format: " <percentage>% <directory>/"
+        expect(result.stdout).to match(%r{\d+\.\d+% .+/})
       end
     end
 
     describe 'pathspec filtering' do
-      it 'limits results to matching pathspecs' do
+      it 'limits output to matching pathspecs' do
         result = command.call('after_spaces', 'after_multi', pathspecs: ['lib/'])
 
-        paths = result.files.map(&:path)
-        expect(paths).to all(start_with('lib/'))
+        # Output should only include lib/ files
+        lines = result.stdout.lines.grep(/^\d+\t\d+\t/)
+        lines.each do |line|
+          expect(line).to match(%r{\tlib/})
+        end
       end
     end
 
     describe 'exit code handling' do
-      it 'succeeds with no differences (exit code 0)' do
+      it 'returns exit code 0 with no differences' do
         result = command.call('initial', 'initial')
 
-        expect(result.files).to be_empty
+        expect(result.status.exitstatus).to eq(0)
+        expect(result.stdout).to be_empty
       end
 
-      it 'succeeds with differences found (exit code 1)' do
+      it 'succeeds with differences found' do
         result = command.call('initial', 'after_modify')
 
-        expect(result.files).not_to be_empty
+        expect(result.status.exitstatus).to be <= 1
+        expect(result.stdout).not_to be_empty
       end
 
-      it 'raises FailedError for invalid revision (exit code 128)' do
+      it 'raises FailedError for invalid revision' do
         expect { command.call('nonexistent-ref') }.to raise_error(Git::FailedError)
       end
     end
