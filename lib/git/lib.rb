@@ -31,6 +31,7 @@ require 'git/errors'
 require 'git/parsers/branch'
 require 'git/parsers/stash'
 require 'git/parsers/tag'
+require 'git/url'
 require 'logger'
 require 'pathname'
 require 'pp'
@@ -160,7 +161,9 @@ module Git
     # @todo make this work with SSH password or auth_key
     #
     def clone(repository_url, directory = nil, opts = {})
-      Git::Commands::Clone.new(self).call(repository_url, directory, **opts)
+      clone_dir = opts.delete(:path) || directory
+      Git::Commands::Clone.new(self).call(repository_url, clone_dir, **opts)
+      build_clone_result(repository_url, clone_dir, opts)
     end
 
     # Returns the name of the default branch of the given repository
@@ -1924,6 +1927,35 @@ module Git
     end
 
     private
+
+    # Build a result hash from clone options for Git::Base.new
+    #
+    # @param repository_url [String] the repository URL
+    # @param directory [String, nil] the target directory
+    # @param opts [Hash] clone options
+    # @return [Hash] result hash with directory, log, and git_ssh keys
+    #
+    def build_clone_result(repository_url, directory, opts)
+      clone_dir = resolve_clone_directory(repository_url, directory, opts)
+      result = clone_dir_result(clone_dir, opts)
+      result[:log] = opts[:log] if opts[:log]
+      result[:git_ssh] = opts[:git_ssh] if opts.key?(:git_ssh)
+      result
+    end
+
+    def resolve_clone_directory(repository_url, directory, opts)
+      opts[:path] || directory || Git::URL.clone_to(
+        repository_url, bare: opts[:bare], mirror: opts[:mirror]
+      )
+    end
+
+    def clone_dir_result(clone_dir, opts)
+      if opts[:bare] || opts[:mirror]
+        { repository: clone_dir }
+      else
+        { working_directory: clone_dir }
+      end
+    end
 
     # Translate legacy merge option names to new interface
     #
