@@ -27,6 +27,7 @@ require_relative 'commands/ls_tree'
 require_relative 'commands/merge/start'
 require_relative 'commands/merge_base'
 require_relative 'commands/mv'
+require_relative 'commands/pull'
 require_relative 'commands/reset'
 require_relative 'commands/rm'
 require_relative 'commands/show'
@@ -1751,12 +1752,8 @@ module Git
     def pull(remote = nil, branch = nil, opts = {})
       raise ArgumentError, 'You must specify a remote if a branch is specified' if remote.nil? && !branch.nil?
 
-      ArgsBuilder.validate!(opts, PULL_OPTION_MAP)
-
-      flags = build_args(opts, PULL_OPTION_MAP)
       positional_args = [remote, branch].compact
-
-      command_capturing('pull', *flags, *positional_args).stdout
+      Git::Commands::Pull.new(self).call(*positional_args, **opts).stdout
     end
 
     # Return the SHA of a tag reference
