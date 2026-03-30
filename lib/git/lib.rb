@@ -35,6 +35,7 @@ require_relative 'commands/mv'
 require_relative 'commands/pull'
 require_relative 'commands/push'
 require_relative 'commands/reset'
+require_relative 'commands/revert'
 require_relative 'commands/remote/add'
 require_relative 'commands/remote/get_url'
 require_relative 'commands/remote/list'
@@ -1304,18 +1305,13 @@ module Git
       Git::Commands::Clean.new(self).call(**opts).stdout
     end
 
-    REVERT_OPTION_MAP = [
-      { keys: [:no_edit], flag: '--no-edit', type: :boolean }
-    ].freeze
+    REVERT_ALLOWED_OPTS = %i[no_edit].freeze
 
     def revert(commitish, opts = {})
-      # Forcing --no-edit as default since it's not an interactive session.
-      opts = { no_edit: true }.merge(opts)
-
-      args = build_args(opts, REVERT_OPTION_MAP)
-      args << commitish
-
-      command_capturing('revert', *args)
+      # :no_edit is accepted for backward compatibility; --no-edit is always
+      # passed as a literal in Git::Commands::Revert::Start.
+      assert_valid_opts(opts, REVERT_ALLOWED_OPTS)
+      Git::Commands::Revert::Start.new(self).call(commitish)
     end
 
     def apply(patch_file)

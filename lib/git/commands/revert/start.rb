@@ -34,8 +34,9 @@ module Git
         arguments do
           literal 'revert'
 
-          # --no-edit is always required: --edit opens $EDITOR which conflicts
-          # with the non-interactive execution model
+          # --no-edit is always passed; opening $EDITOR from a library call conflicts
+          # with the non-interactive execution model. In Git 6.0 this will remain
+          # a fixed literal and the :no_edit option will be removed from Git::Lib#revert.
           literal '--no-edit'
 
           # Commit message cleanup
