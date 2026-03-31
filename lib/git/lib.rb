@@ -341,17 +341,16 @@ module Git
 
       call_opts = log_base_call_options(opts, skip: opts[:skip], merges: opts[:merges])
       run_log_command(log_revision_range_args(opts), call_opts)
-    end
 
-    def run_log_command(revision_range_args, call_opts)
-      result = Git::Commands::Log.new(self).call(
-        *revision_range_args,
-        no_color: true, pretty: 'raw',
-        **call_opts
-      )
-      process_commit_log_data(result.stdout.split("\n"))
+      # args = log_common_options(opts)
+      # args += build_args(opts, FULL_LOG_EXTRA_OPTIONS_MAP)
+      # args += log_path_options(opts)
+
+      # log_or_empty_on_unborn do
+      #   full_log = command_lines('log', *args)
+      #   process_commit_log_data(full_log)
+      # end
     end
-    private :run_log_command
 
     # Verify and resolve a Git revision to its full SHA
     #
@@ -2764,6 +2763,26 @@ module Git
         max_count: opts[:count],
         path: opts[:path_limiter] ? Array(opts[:path_limiter]) : nil
       }.merge(extra).compact
+    end
+
+    def run_log_command(revision_range_args, call_opts)
+      log_or_empty_on_unborn do
+        result = Git::Commands::Log.new(self).call(
+          *revision_range_args,
+          no_color: true, pretty: 'raw',
+          **call_opts
+        )
+        process_commit_log_data(result.stdout.split("\n"))
+      end
+    end
+
+    def log_or_empty_on_unborn
+      yield
+    rescue Git::FailedError => e
+      raise unless e.result.status.exitstatus == 128 &&
+                   e.result.stderr =~ /does not have any commits yet/
+
+      []
     end
   end
 end
