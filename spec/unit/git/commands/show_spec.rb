@@ -43,6 +43,15 @@ RSpec.describe Git::Commands::Show do
       end
     end
 
+    context 'with out: execution option (streaming)' do
+      it 'dispatches to command_streaming when out: is given' do
+        out_io = instance_double(File)
+        expect_command_streaming('show', ':2:path/to/file.txt', out: out_io).and_return(command_result)
+
+        command.call(':2:path/to/file.txt', out: out_io)
+      end
+    end
+
     context 'with an unrecognised keyword argument' do
       it 'raises ArgumentError' do
         expect { command.call(foo: true) }.to raise_error(ArgumentError)
