@@ -13,7 +13,7 @@ RSpec.describe Git::Commands::Archive do
     context 'with only the tree_ish operand' do
       it 'runs git archive with the tree-ish' do
         expected_result = command_result
-        expect_command_capturing('archive', '--', 'HEAD', normalize: false, chomp: false)
+        expect_command_capturing('archive', '--', 'HEAD', normalize: false)
           .and_return(expected_result)
 
         result = command.call('HEAD')
@@ -24,14 +24,14 @@ RSpec.describe Git::Commands::Archive do
 
     context 'with path operands' do
       it 'includes paths after the tree-ish' do
-        expect_command_capturing('archive', '--', 'HEAD', 'src/', normalize: false, chomp: false)
+        expect_command_capturing('archive', '--', 'HEAD', 'src/', normalize: false)
           .and_return(command_result)
 
         command.call('HEAD', 'src/')
       end
 
       it 'includes multiple paths' do
-        expect_command_capturing('archive', '--', 'HEAD', 'src/', 'lib/', normalize: false, chomp: false)
+        expect_command_capturing('archive', '--', 'HEAD', 'src/', 'lib/', normalize: false)
           .and_return(command_result)
 
         command.call('HEAD', 'src/', 'lib/')
@@ -40,7 +40,7 @@ RSpec.describe Git::Commands::Archive do
 
     context 'with the :format option' do
       it 'adds --format=<value> to the command line' do
-        expect_command_capturing('archive', '--format=tar', '--', 'HEAD', normalize: false, chomp: false)
+        expect_command_capturing('archive', '--format=tar', '--', 'HEAD', normalize: false)
           .and_return(command_result)
 
         command.call('HEAD', format: 'tar')
@@ -49,7 +49,7 @@ RSpec.describe Git::Commands::Archive do
 
     context 'with the :prefix option' do
       it 'adds --prefix=<value> to the command line' do
-        expect_command_capturing('archive', '--prefix=myproject/', '--', 'HEAD', normalize: false, chomp: false)
+        expect_command_capturing('archive', '--prefix=myproject/', '--', 'HEAD', normalize: false)
           .and_return(command_result)
 
         command.call('HEAD', prefix: 'myproject/')
@@ -58,14 +58,14 @@ RSpec.describe Git::Commands::Archive do
 
     context 'with the :output option' do
       it 'adds --output=<value> to the command line' do
-        expect_command_capturing('archive', '--output=release.zip', '--', 'HEAD', normalize: false, chomp: false)
+        expect_command_capturing('archive', '--output=release.zip', '--', 'HEAD', normalize: false)
           .and_return(command_result)
 
         command.call('HEAD', output: 'release.zip')
       end
 
       it 'supports the :o alias' do
-        expect_command_capturing('archive', '--output=release.tar', '--', 'HEAD', normalize: false, chomp: false)
+        expect_command_capturing('archive', '--output=release.tar', '--', 'HEAD', normalize: false)
           .and_return(command_result)
 
         command.call('HEAD', o: 'release.tar')
@@ -74,7 +74,7 @@ RSpec.describe Git::Commands::Archive do
 
     context 'with the :worktree_attributes option' do
       it 'adds --worktree-attributes to the command line' do
-        expect_command_capturing('archive', '--worktree-attributes', '--', 'HEAD', normalize: false, chomp: false)
+        expect_command_capturing('archive', '--worktree-attributes', '--', 'HEAD', normalize: false)
           .and_return(command_result)
 
         command.call('HEAD', worktree_attributes: true)
@@ -85,7 +85,7 @@ RSpec.describe Git::Commands::Archive do
       it 'adds --remote=<value> to the command line' do
         expect_command_capturing(
           'archive', '--remote=git://example.com/repo.git', '--', 'HEAD',
-          normalize: false, chomp: false
+          normalize: false
         ).and_return(command_result)
 
         command.call('HEAD', remote: 'git://example.com/repo.git')
@@ -96,7 +96,7 @@ RSpec.describe Git::Commands::Archive do
       it 'adds --exec=<value> to the command line' do
         expect_command_capturing(
           'archive', '--exec=/usr/bin/git-upload-archive', '--', 'HEAD',
-          normalize: false, chomp: false
+          normalize: false
         ).and_return(command_result)
 
         command.call('HEAD', exec: '/usr/bin/git-upload-archive')
@@ -105,14 +105,14 @@ RSpec.describe Git::Commands::Archive do
 
     context 'with the :verbose option' do
       it 'adds --verbose when true' do
-        expect_command_capturing('archive', '--verbose', '--', 'HEAD', normalize: false, chomp: false)
+        expect_command_capturing('archive', '--verbose', '--', 'HEAD', normalize: false)
           .and_return(command_result)
 
         command.call('HEAD', verbose: true)
       end
 
       it 'supports the :v alias' do
-        expect_command_capturing('archive', '--verbose', '--', 'HEAD', normalize: false, chomp: false)
+        expect_command_capturing('archive', '--verbose', '--', 'HEAD', normalize: false)
           .and_return(command_result)
 
         command.call('HEAD', v: true)
@@ -137,7 +137,7 @@ RSpec.describe Git::Commands::Archive do
           '--prefix=release-1.0/',
           '--remote=git://example.com/repo.git',
           '--', 'v1.0', 'src/',
-          normalize: false, chomp: false
+          normalize: false
         ).and_return(command_result)
 
         command.call('v1.0', 'src/', format: 'tar', prefix: 'release-1.0/',
