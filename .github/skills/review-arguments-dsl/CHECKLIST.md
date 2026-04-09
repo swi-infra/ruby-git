@@ -1,6 +1,122 @@
 # Arguments DSL Checklist
 
-## 1. Correct DSL method per option type
+- [1. Establish reference sources and scope](#1-establish-reference-sources-and-scope)
+  - [Options added after the minimum supported version](#options-added-after-the-minimum-supported-version)
+  - [`requires_git_version` is class-level only](#requires_git_version-is-class-level-only)
+  - [Options excluded due to execution-model conflicts](#options-excluded-due-to-execution-model-conflicts)
+- [2. Correct DSL method per option type](#2-correct-dsl-method-per-option-type)
+  - [Recognizing `flag_or_value_option` from version-matched git docs](#recognizing-flag_or_value_option-from-version-matched-git-docs)
+  - [Action-option-with-optional-value commands](#action-option-with-optional-value-commands)
+  - [Choosing the correct pathspec form](#choosing-the-correct-pathspec-form)
+  - [Quick reference](#quick-reference)
+- [3. Correct alias and `as:` usage](#3-correct-alias-and-as-usage)
+  - [The `as:` escape hatch](#the-as-escape-hatch)
+    - [Prefer first-class DSL features over `as:`](#prefer-first-class-dsl-features-over-as)
+    - [Single-char flags never need `as:`](#single-char-flags-never-need-as)
+  - [Short-flag alias completeness](#short-flag-alias-completeness)
+  - [Spurious short-flag aliases](#spurious-short-flag-aliases)
+- [4. Correct ordering](#4-correct-ordering)
+  - [`end_of_options` placement](#end_of_options-placement)
+    - [Rule 1 — SYNOPSIS shows `--`: mirror the SYNOPSIS](#rule-1--synopsis-shows----mirror-the-synopsis)
+    - [Rule 2 — SYNOPSIS does NOT show `--`: protect operands from flag misinterpretation](#rule-2--synopsis-does-not-show----protect-operands-from-flag-misinterpretation)
+- [5. Correct modifiers](#5-correct-modifiers)
+- [6. Completeness](#6-completeness)
+  - [Repeatable boolean flags](#repeatable-boolean-flags)
+  - [Per-argument validation completeness](#per-argument-validation-completeness)
+- [7. Exit-status declaration consistency (class-level, outside the DSL)](#7-exit-status-declaration-consistency-class-level-outside-the-dsl)
+
+## 1. Establish reference sources and scope
+
+Before auditing individual DSL entries, establish the documentation sources and
+determine which options are in scope.
+
+Establish **the minimum version of git supported**. This is defined in the
+Git::MINIMUM_GIT_VERSION found in lib/git.rb
+
+Establish **the latest version of git**. This can be found on the official git home page at
+"https://git-scm.com".
+
+Cross-check against:
+
+- official git documentation for the command from "https://git-scm.com/docs/git-<command>"
+- command `@overload` docs
+- command unit tests
+
+Every option documented for the command should be represented in `arguments do`
+(except those excluded due to execution-model co´nflicts — see below), and every
+DSL entry should be covered by tests.
+
+### Options added after the minimum supported version
+
+Options should **not** be omitted from the DSL solely because they were added after
+the minimum version of git supported. Scaffold every option the latest version of git
+documents. When a caller passes such an option on an older git installation, git
+itself will produce its native "unknown option" error and this gem will raise a
+Git::Failed error. This is acceptable.
+
+### `requires_git_version` is class-level only
+
+If `requires_git_version` is present on a command class, leave it alone — it is
+a class-level declaration managed separately from the arguments DSL.
+
+### Options excluded due to execution-model conflicts
+
+Include ALL git options in the DSL by default — including output-format flags such as
+`--patch`, `--numstat`, `--raw`, `--format=…`, `--pretty=…`, `--no-color`, etc.
+
+The only options that should be **excluded** are those that conflict with the
+subprocess execution model: options that require TTY input or otherwise make the
+command incompatible with non-interactive subprocess execution:
+
+Examples of options to **exclude** (execution-model conflicts):
+
+- `--interactive` / `-i` — opens an interactive menu; requires a TTY
+- `--patch` (interactive form, e.g. `git add -p`) — requires TTY prompts
+- Any option whose git implementation requires stdin/TTY interaction the library
+  cannot provide
+
+Examples of options to **include** (no execution-model conflict):
+
+- `--format=<fmt>`, `--pretty=<fmt>`, `--porcelain` — output format flags; the facade
+  passes these explicitly when the parser requires a specific format
+- `--patch` (diff output mode, e.g. `git diff --patch`), `--numstat`, `--shortstat`,
+  `--raw` — output mode flags used by the facade to select a parseable format
+
+> **Note on `--patch`:** it appears in both lists because the flag has two different
+> git behaviors depending on the command. In `git add -p` it opens an interactive
+> session (exclude). In `git diff --patch` it selects a non-interactive output format
+> (include). Evaluate per-command, not globally.
+
+- `--no-color` — facade passes this to prevent ANSI escape codes from breaking
+  parsing
+- `--verbose` / `-v`, `--quiet` / `-q` — include these unless they open a TTY
+
+**Default assumption for `--verbose` and `--quiet`:** include unless their git
+implementation requires interactive I/O.
+
+Command classes are neutral — they never hardcode `literal` entries for
+output-control, editor-suppression, or progress flags. Declare these as
+`flag_option` / `value_option` so the facade can pass the policy value.
+
+> **Anti-pattern:** `literal '--no-edit'`, `literal '--verbose'`,
+> `literal '--no-progress'` inside a command class.
+>
+> **Correct pattern:** `flag_option :edit, negatable: true` in the command;
+> `edit: false` passed from the facade call site.
+
+**The `--edit` / `--no-edit` pair:** Model as `flag_option :edit, negatable: true`.
+The facade (`Git::Lib`) passes `edit: false` at each call site. Do **not** hardcode
+`literal '--no-edit'` — that prevents the facade from controlling the option — and do
+**not** exclude `--edit` from the DSL.
+
+**Output-format options belong at the facade call site, not as `literal` entries:**
+When a parser requires specific output flags (e.g. `--pretty=raw`, `--numstat`),
+declare those flags in the DSL with `flag_option` or `value_option`, and pass them
+explicitly from `Git::Lib`. Never hardcode them as `literal` entries inside the
+command class — that hides the parser contract and prevents the facade from choosing
+the format. See Insight 16 in `redesign/3_architecture_implementation.md`.
+
+## 2. Correct DSL method per option type
 
 | Git behavior | DSL method | Example |
 | --- | --- | --- |
@@ -122,7 +238,7 @@ operand :commit2   # optional — only meaningful when commit1 is also given
 | `[<a>] [--] [<b>...]` | `operand :a` + `end_of_options` + `value_option :b, as_operand: true` |
 | `[<a> [<b>]]` | `operand :a` + `operand :b` |
 
-## 2. Correct alias and `as:` usage
+## 3. Correct alias and `as:` usage
 
 - Prefer aliases for long/short pairs (`%i[force f]`, `%i[all A]`, `%i[intent_to_add
   N]`)
@@ -234,7 +350,7 @@ Flag any alias whose short character cannot be found in the version-matched
 docs' option
 headings as an error (not just a style issue).
 
-## 3. Correct ordering
+## 4. Correct ordering
 
 Mirror the order options appear in the version-matched git SYNOPSIS for the
 command. This keeps the DSL self-documenting and makes it easy to verify
@@ -259,7 +375,7 @@ When the version-matched SYNOPSIS explicitly shows `--` between operand groups
 (e.g., `[<tree-ish>] [--] [<pathspec>...]`), place `end_of_options` in the same
 position the SYNOPSIS shows it — after the pre-`--` operands, before the post-`--`
 group. See [Choosing the correct pathspec form](#choosing-the-correct-pathspec-form)
-in section 1 for how to model the post-`--` group (`value_option ... as_operand: true`).
+in section 2 for how to model the post-`--` group (`value_option ... as_operand: true`).
 
 **Do not apply Rule 2** when Rule 1 applies.
 
@@ -318,7 +434,7 @@ when no operand can plausibly start with `-`. Omit it by convention when neither
 applies: it adds no defensive value and produces unnecessarily verbose command lines
 (e.g. `git remote remove -- origin` instead of `git remote remove origin`).
 
-## 4. Correct modifiers
+## 5. Correct modifiers
 
 Derive `required:` and `repeatable:` directly from the version-matched git
 SYNOPSIS notation
@@ -365,22 +481,13 @@ correctly placed on their respective DSL methods:
 | `allow_empty:` | `value_option` |
 | `as_operand:` | `value_option` only — see pathspec table above |
 | `max_times:` | `flag_option` — limits how many times the flag is emitted; caller passes an integer up to N (e.g. `force: 2` emits `--force --force`) |
-| `end_of_options` | structural DSL method — required before the first `operand` (or `value_option ... as_operand: true`) whenever any option flags appear earlier in the block; pathspec operands always require it; see section 3 for the full placement rule |
+| `end_of_options` | structural DSL method — required before the first `operand` (or `value_option ... as_operand: true`) whenever any option flags appear earlier in the block; pathspec operands always require it; see section 4 for the full placement rule |
 
-## 5. Completeness
-
-Cross-check against:
-
-- git docs
-- command `@overload` docs
-- command unit tests
-
-Every supported **behavioral** option should be represented in `arguments do`, and
-every DSL entry should be covered by tests.
+## 6. Completeness
 
 ### Repeatable boolean flags
 
-When the version-matched git documentation describes a flag that can be given multiple
+When the latest-version git documentation describes a flag that can be given multiple
 times to increase its effect (e.g. `--force` can be given twice for `git clean`), use
 `flag_option ..., max_times: N` where N is the documented maximum repetition count.
 The caller can then pass `true` (emit once) or an integer up to N (emit that many
@@ -392,65 +499,8 @@ Flag these as errors:
   `as: ['--force', '--force']`) instead of `max_times:`
 - Using a separate symbol name for the repeated form (e.g. `:force_force`) instead of
   `max_times:` on the same symbol
-- Missing `max_times:` when the version-matched docs explicitly describe repeatable
+- Missing `max_times:` when the latest-version docs explicitly describe repeatable
   flag behavior
-
-### Options excluded due to execution-model conflicts
-
-Include ALL git options in the DSL by default — including output-format flags such as
-`--patch`, `--numstat`, `--raw`, `--format=…`, `--pretty=…`, `--no-color`, etc.
-
-The only options that should be **excluded** are those that conflict with the
-subprocess execution model: options that require TTY input or otherwise make the
-command incompatible with non-interactive subprocess execution:
-
-Examples of options to **exclude** (execution-model conflicts):
-
-- `--interactive` / `-i` — opens an interactive menu; requires a TTY
-- `--patch` (interactive form, e.g. `git add -p`) — requires TTY prompts
-- Any option whose git implementation requires stdin/TTY interaction the library
-  cannot provide
-
-Examples of options to **include** (no execution-model conflict):
-
-- `--format=<fmt>`, `--pretty=<fmt>`, `--porcelain` — output format flags; the facade
-  passes these explicitly when the parser requires a specific format
-- `--patch` (diff output mode, e.g. `git diff --patch`), `--numstat`, `--shortstat`,
-  `--raw` — output mode flags used by the facade to select a parseable format
-
-> **Note on `--patch`:** it appears in both lists because the flag has two different
-> git behaviors depending on the command. In `git add -p` it opens an interactive
-> session (exclude). In `git diff --patch` it selects a non-interactive output format
-> (include). Evaluate per-command, not globally.
-
-- `--no-color` — facade passes this to prevent ANSI escape codes from breaking
-  parsing
-- `--verbose` / `-v`, `--quiet` / `-q` — include these unless they open a TTY
-
-**Default assumption for `--verbose` and `--quiet`:** include unless their git
-implementation requires interactive I/O.
-
-Command classes are neutral — they never hardcode `literal` entries for
-output-control, editor-suppression, or progress flags. Declare these as
-`flag_option` / `value_option` so the facade can pass the policy value.
-
-> **Anti-pattern:** `literal '--no-edit'`, `literal '--verbose'`,
-> `literal '--no-progress'` inside a command class.
->
-> **Correct pattern:** `flag_option :edit, negatable: true` in the command;
-> `edit: false` passed from the facade call site.
-
-**The `--edit` / `--no-edit` pair:** Model as `flag_option :edit, negatable: true`.
-The facade (`Git::Lib`) passes `edit: false` at each call site. Do **not** hardcode
-`literal '--no-edit'` — that prevents the facade from controlling the option — and do
-**not** exclude `--edit` from the DSL.
-
-**Output-format options belong at the facade call site, not as `literal` entries:**
-When a parser requires specific output flags (e.g. `--pretty=raw`, `--numstat`),
-declare those flags in the DSL with `flag_option` or `value_option`, and pass them
-explicitly from `Git::Lib`. Never hardcode them as `literal` entries inside the
-command class — that hides the parser contract and prevents the facade from choosing
-the format. See Insight 16 in `redesign/3_architecture_implementation.md`.
 
 ### Per-argument validation completeness
 
@@ -489,7 +539,7 @@ declarations are appropriate and should not be flagged as policy violations. Exa
 true`. See the validation delegation policy in
 `redesign/3_architecture_implementation.md` Insight 6.
 
-## 6. Exit-status declaration consistency (class-level, outside the DSL)
+## 7. Exit-status declaration consistency (class-level, outside the DSL)
 
 `allow_exit_status` is a class-level declaration, not part of the `arguments do`
 block. It is included here because it should be validated alongside DSL entries for

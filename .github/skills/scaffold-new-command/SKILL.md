@@ -24,7 +24,7 @@ docs using the `Git::Commands::Base` architecture.
   - [Overriding `call` — inline example](#overriding-call--inline-example)
     - [Action-option-with-optional-value commands](#action-option-with-optional-value-commands)
     - [When to use `skip_cli` on `operand`](#when-to-use-skip_cli-on-operand)
-- [Options completeness — consult the man page first](#options-completeness--consult-the-man-page-first)
+- [Options completeness — consult the latest-version docs first](#options-completeness--consult-the-latest-version-docs-first)
 - [Execution-model conflicts are intentionally omitted](#execution-model-conflicts-are-intentionally-omitted)
 - [`end_of_options` placement](#end_of_options-placement)
 - [Exit status guidance](#exit-status-guidance)
@@ -422,35 +422,56 @@ Key points:
 - **Extract helpers** like `run_batch` to stay within Rubocop `Metrics/MethodLength`
   and `Metrics/AbcSize` thresholds. Aim to keep `call` under ~10 lines.
 
-## Options completeness — consult version-matched docs first
+## Options completeness — consult the latest-version docs first
 
-**Before writing any DSL entries**, determine the project's minimum supported
-Git version from the repository metadata, then fetch documentation for that
-exact version of the subcommand and enumerate every option it documents.
+**Before writing any DSL entries**, fetch documentation for the **latest
+supported Git version** and enumerate every option it documents.
 
-For this repository, the minimum supported Git version is declared in
-`git.gemspec` (`git 2.28.0 or greater`).
+For this repository:
+
+- The **latest supported Git version** is determined by checking the official
+  git website at https://git-scm.com. Use this for option completeness
+  (scaffold every option the latest version documents).
+- The **minimum supported Git version** is **2.28.0** (declared in `git.gemspec`)
+  — use this only for `requires_git_version` decisions (see below).
 
 Use sources in this order:
 
-1. **Version-matched upstream documentation** for the minimum supported Git
-  version.
-2. **Version-matched upstream source** for that same release when exact parser
+1. **Latest-version upstream documentation** — the primary source for which
+  options to scaffold.
+2. **Latest-version upstream source** for that same release when exact parser
   behavior is ambiguous in the docs.
 3. **Local `git <command> -h` output** only as a supplemental check for the
   installed Git version.
 
-Do **not** scaffold from local help output alone. The installed Git may be
-newer than the minimum supported version and may expose flags, negated forms,
-or aliases that are unavailable in older supported releases.
+Do **not** scaffold from local help output alone. The installed Git may differ
+from the latest supported version.
 
 Useful documentation URLs often look like:
 
 ```text
 https://git-scm.com/docs/git-<subcommand>
-https://git-scm.com/docs/git-<subcommand>/<version>
-https://raw.githubusercontent.com/git/git/v<version>/Documentation/git-<subcommand>.txt
+https://git-scm.com/docs/git-<subcommand>/<latest-version>
+https://raw.githubusercontent.com/git/git/v<latest-version>/Documentation/git-<subcommand>.txt
 ```
+
+Replace `<latest-version>` with the latest git release from https://git-scm.com.
+
+### `requires_git_version` convention
+
+`requires_git_version` is a **class-level** declaration only. Individual options
+do **not** carry version annotations.
+
+| Scenario | Action |
+|---|---|
+| Command exists in git 2.28.0 | Do **not** add `requires_git_version` |
+| Command was introduced after git 2.28.0 | Add `requires_git_version '<version>'` at the version the command was introduced |
+
+Options that were added to a command after 2.28.0 are still scaffolded in the
+DSL — they are **not** omitted. When a caller passes such an option on an older
+git installation, git itself will produce its native "unknown option" error.
+This is acceptable and expected; the ruby-git library does not gate individual
+options by version.
 
 For each option, make one of two decisions:
 
@@ -461,22 +482,23 @@ For each option, make one of two decisions:
 
 Group related options with a comment in the DSL (e.g. `# Ref inclusion`, `# Date
 filtering`, `# Commit ordering`). Follow the section groupings from the
-version-matched documentation —
+latest-version documentation —
 this makes it easy for a reviewer to cross-check against the docs.
 
-**Pairs and opposites:** when the version-matched docs document `--foo` /
+**Pairs and opposites:** when the latest-version docs document `--foo` /
 `--no-foo` as
 explicit flags, model them as a single `flag_option :foo, negatable: true` rather
 than two separate entries. This prevents contradictory combinations and makes the
 three-state semantics (`true` / `false` / `nil`) explicit.
 
-**Short-flag aliases — cross-check the version-matched docs/source:** before adding any short-flag
+**Short-flag aliases — cross-check the latest-version docs/source:** before adding any short-flag
 alias (e.g. `%i[dry_run n]`), verify the alias character appears on the same option
-heading in the documentation or parser for the minimum supported version
-(`-n, --dry-run`). Do **not** invent an alias that the minimum-version sources do
-not document — it will generate an unknown flag that older supported git may reject.
-Symmetrically, every option the version-matched docs document with a short form
-**must** have an
+heading in the documentation or parser for the latest supported version
+(`-n, --dry-run`). Do **not** invent an alias that the latest-version sources do
+not document — in this DSL, short aliases are Ruby-keyword aliases for
+ergonomics and documentation parity, while CLI emission still follows the primary
+option name's flag spec. Symmetrically, every option the latest-version docs
+document with a short form **must** have an
 alias in the DSL (long name first: `%i[dry_run n]`).
 
 **`as:` is an escape hatch, not a default tool:** treat `as:` as suspicious by
@@ -486,12 +508,12 @@ DSL mapping plus existing modifiers (`negatable:`, `inline:`, `as_operand:`,
 the same behavior, prefer that. In particular, do not use `as:` to encode repeated
 flags now that `max_times:` exists.
 
-**`inline: true` for `=<value>` options:** when the version-matched docs show `--option=<value>`
+**`inline: true` for `=<value>` options:** when the latest-version docs show `--option=<value>`
 (with an `=`), the DSL entry must include `inline: true` regardless of whether the
 DSL method is `value_option` or `flag_or_value_option`. Without it, the value is
 emitted as a separate token (`--option value`) instead of the expected inline form
 (`--option=value`). Check every `value_option` and `flag_or_value_option` entry
-against the minimum-version signature.
+against the latest-version signature.
 
 **Constraint declarations are generally not used in command classes.** Do not add
 `conflicts`, `requires`, `requires_one_of`, `requires_exactly_one_of`,
@@ -513,9 +535,7 @@ See `redesign/3_architecture_implementation.md` Insight 6 for the full policy.
 This step is required. A command class that only exposes the options that happen
 to be used today in `Git::Lib` is incomplete — callers of the future API should
 not need to re-open the docs just because the scaffold only covered current
-usage. If local help output shows more options than the minimum-version sources,
-do not scaffold those newer forms into the DSL unless the repository's minimum
-supported Git version has also been raised.
+usage.
 
 ## Execution-model conflicts are intentionally omitted
 

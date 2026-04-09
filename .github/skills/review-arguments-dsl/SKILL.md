@@ -54,30 +54,56 @@ Required:
 
 ## Version-Aware Verification Sources
 
-Before auditing any DSL entry, determine the project's minimum supported Git
-version from the repository metadata. In this repository, that version is
-declared in `git.gemspec` (`git 2.28.0 or greater`).
+Before auditing any DSL entry, identify the project's supported Git versions:
+
+- **Latest supported Git version** — determined by checking the official git
+  website at https://git-scm.com. Use this for **option completeness**. Every
+  option documented in the latest version should be present in the DSL.
+- **Minimum supported Git version: 2.28.0** (declared in `git.gemspec`) — use
+  this only for **`requires_git_version` decisions** and short-flag alias
+  verification (see below).
 
 Use sources in this order:
 
-1. **Version-matched upstream documentation** for the minimum supported Git
-  version. Prefer the tagged upstream documentation or versioned man page for
-  that exact release.
-2. **Version-matched upstream source** for the same release when the docs are
+1. **Latest-version upstream documentation** — the primary source for which
+  options to include. Prefer the tagged upstream documentation or versioned man
+  page for that exact release.
+2. **Latest-version upstream source** for the same release when the docs are
   ambiguous or abbreviated and exact parser behavior matters (for example:
   long-option spelling, short aliases, negation support, optional values, or
   `--option[=<value>]` forms).
 3. **Local `git <command> -h` output** only as a supplemental check for the
   installed Git version on the current machine.
 
-Do **not** rely exclusively on local help output. The installed Git may be
-newer than the repository's minimum supported version and can advertise options
-or flag forms that are not safe to model in the DSL for older supported Git
-releases.
+Do **not** rely exclusively on local help output. The installed Git may differ
+from the latest supported version.
 
-When local help disagrees with the minimum-supported-version sources, prefer the
-minimum-supported-version behavior for the DSL and call out the newer-version
-difference explicitly in the review output.
+### Options added after the minimum supported version
+
+Options should **not** be omitted from the DSL solely because they were added
+after git 2.28.0. Scaffold every option the latest version documents. When a
+caller passes such an option on an older git installation, git itself will
+produce its native "unknown option" error. This is acceptable.
+
+### `requires_git_version` is class-level only
+
+`requires_git_version` is a **class-level** declaration. Individual options do
+**not** carry version annotations. The convention:
+
+| Scenario | Action |
+|---|---|
+| Command exists in git 2.28.0 | Do **not** add `requires_git_version` |
+| Command was introduced after git 2.28.0 | Add `requires_git_version '<version>'` at the version the command was introduced |
+
+### Short-flag alias verification
+
+When verifying short-flag aliases, cross-check against the **minimum supported
+version** (2.28.0) documentation. In this DSL, aliases are Ruby keyword aliases
+used for API/documentation parity; they normalize to the primary option name,
+and CLI emission follows the primary name's flag spec. If a short form was
+introduced after 2.28.0, keep the long form as the primary declaration and note
+the newer short alias in the review output, but do not flag it as an error by
+itself.
 
 ## Architecture Context (Base Pattern)
 
