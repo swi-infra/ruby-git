@@ -71,7 +71,7 @@ module Git
         #
         #     @raise [ArgumentError] if no branch names are provided
         #
-        #     @raise [Git::FailedError] for unexpected errors (exit code > 1)
+        #     @raise [Git::FailedError] if git exits outside the allowed range (exit code > 1)
       end
     end
   end

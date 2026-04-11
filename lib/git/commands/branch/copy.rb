@@ -65,7 +65,7 @@ module Git
         #
         #     @raise [ArgumentError] if unsupported options are provided
         #
-        #     @raise [Git::FailedError] if the branch doesn't exist or target exists (without force)
+        #     @raise [Git::FailedError] if git exits with a non-zero exit status
         #
         #   @overload call(old_branch, new_branch, **options)
         #
@@ -85,7 +85,7 @@ module Git
         #
         #     @raise [ArgumentError] if unsupported options are provided
         #
-        #     @raise [Git::FailedError] if the branch doesn't exist or target exists (without force)
+        #     @raise [Git::FailedError] if git exits with a non-zero exit status
       end
     end
   end
