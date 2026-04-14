@@ -5,7 +5,7 @@ require 'git/commands/base'
 module Git
   module Commands
     module Am
-      # Wrapper for the `git am --show-current-patch` command
+      # Implements the `git am --show-current-patch` command
       #
       # Shows the message currently being applied when `git am` has stopped due to
       # conflicts.
@@ -13,6 +13,8 @@ module Git
       # @example Show the current patch
       #   show_cmd = Git::Commands::Am::ShowCurrentPatch.new(execution_context)
       #   show_cmd.call
+      #
+      # @note `arguments` block audited against https://git-scm.com/docs/git-am/2.53.0
       #
       # @see Git::Commands::Am
       #
@@ -38,7 +40,10 @@ module Git
         #
         #   @return [Git::CommandLineResult] the result of calling `git am --show-current-patch`
         #
-        #   @raise [Git::FailedError] if no am session is in progress
+        #   @raise [ArgumentError] if `format` is not `true` or a `String`, or if
+        #     unsupported keyword options are passed
+        #
+        #   @raise [Git::FailedError] if git exits with a non-zero exit status
         #
         def call(format = true, **) # rubocop:disable Style/OptionalBooleanParameter
           super(**, show_current_patch: format)

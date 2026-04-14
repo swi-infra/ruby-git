@@ -34,6 +34,11 @@ RSpec.describe Git::Commands::Am::ShowCurrentPatch do
         expect { command.call(unknown: true) }
           .to raise_error(ArgumentError, /Unsupported options: :unknown/)
       end
+
+      it 'raises ArgumentError when format is false' do
+        expect { command.call(false) }
+          .to raise_error(ArgumentError)
+      end
     end
   end
 end
