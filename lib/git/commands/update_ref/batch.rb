@@ -116,8 +116,10 @@ module Git
         #   @raise [ArgumentError] if no instructions are provided
         #
         #   @raise [Git::FailedError] if git exits with a non-zero exit status
+        # rubocop:disable Metrics/MethodLength
         def call(*, **)
           bound = args_definition.bind(*, **)
+          validate_version!
           delimiter = bound.z? ? "\0" : "\n"
           stdin = Array(bound.instructions).map { |i| "#{i}#{delimiter}" }.join
           with_stdin(stdin) do |reader|
@@ -128,6 +130,7 @@ module Git
             result
           end
         end
+        # rubocop:enable Metrics/MethodLength
       end
     end
   end
