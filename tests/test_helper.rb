@@ -157,6 +157,9 @@ module Test
         in_temp_dir do |_path|
           git = Git.init('test_project')
 
+          # Stub git_version to avoid calling real git version during validation
+          git.lib.define_singleton_method(:git_version) { Git::Version.parse('99.99.99') }
+
           # Create a mock for the command method
           mock_command = lambda do |*cmd, **opts|
             # Filter out internal options for comparison

@@ -106,6 +106,9 @@ class TestGitClone < Test::Unit::TestCase
     in_temp_dir do |_path|
       git = Git.init('.')
 
+      # Stub git_version to avoid calling real git version during validation
+      git.lib.define_singleton_method(:git_version) { Git::Version.parse('99.99.99') }
+
       # Mock the Git::Lib#command! method to capture the actual command line args
       clone_result = mock_clone_result(destination)
       git.lib.define_singleton_method(:command_capturing) do |cmd, *opts|
@@ -132,6 +135,9 @@ class TestGitClone < Test::Unit::TestCase
 
     in_temp_dir do |_path|
       git = Git.init('.')
+
+      # Stub git_version to avoid calling real git version during validation
+      git.lib.define_singleton_method(:git_version) { Git::Version.parse('99.99.99') }
 
       # Mock the Git::Lib#command! method to capture the actual command line args
       clone_result = mock_clone_result(destination)
@@ -162,6 +168,9 @@ class TestGitClone < Test::Unit::TestCase
     in_temp_dir do |_path|
       git = Git.init('.')
 
+      # Stub git_version to avoid calling real git version during validation
+      git.lib.define_singleton_method(:git_version) { Git::Version.parse('99.99.99') }
+
       # Mock the Git::Lib#command! method to capture the actual command line args
       clone_result = mock_clone_result(destination)
       git.lib.define_singleton_method(:command_capturing) do |cmd, *opts|
@@ -190,6 +199,9 @@ class TestGitClone < Test::Unit::TestCase
     in_temp_dir do |_path|
       git = Git.init('.')
 
+      # Stub git_version to avoid calling real git version during validation
+      git.lib.define_singleton_method(:git_version) { Git::Version.parse('99.99.99') }
+
       clone_result = mock_clone_result(destination)
       git.lib.define_singleton_method(:command_capturing) do |cmd, *opts|
         actual_command_line = [cmd, *opts.flatten]
@@ -215,6 +227,9 @@ class TestGitClone < Test::Unit::TestCase
 
     in_temp_dir do |_path|
       git = Git.init('.')
+
+      # Stub git_version to avoid calling real git version during validation
+      git.lib.define_singleton_method(:git_version) { Git::Version.parse('99.99.99') }
 
       clone_result = mock_clone_result(destination)
       git.lib.define_singleton_method(:command_capturing) do |cmd, *opts|
@@ -243,6 +258,9 @@ class TestGitClone < Test::Unit::TestCase
     in_temp_dir do |_path|
       git = Git.init('.')
 
+      # Stub git_version to avoid calling real git version during validation
+      git.lib.define_singleton_method(:git_version) { Git::Version.parse('99.99.99') }
+
       clone_result = mock_clone_result(destination)
       git.lib.define_singleton_method(:command_capturing) do |cmd, *opts|
         actual_command_line = [cmd, *opts.flatten]
@@ -269,6 +287,9 @@ class TestGitClone < Test::Unit::TestCase
 
     in_temp_dir do |_path|
       git = Git.init('.')
+
+      # Stub git_version to avoid calling real git version during validation
+      git.lib.define_singleton_method(:git_version) { Git::Version.parse('99.99.99') }
 
       clone_result = mock_clone_result(destination)
       git.lib.define_singleton_method(:command_capturing) do |cmd, *opts|
