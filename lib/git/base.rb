@@ -48,12 +48,16 @@ module Git
       @config ||= Config.new
     end
 
+    # @deprecated Use {Git.git_version} instead, which returns a {Git::Version} (not an Array).
+    #   For the legacy array shape, call: `Git.git_version.to_a`
+    #
     def self.binary_version(binary_path)
-      result, status = execute_git_version(binary_path)
-
-      raise "Failed to get git version: #{status}\n#{result}" unless status.success?
-
-      parse_version_string(result)
+      Git::Deprecation.warn(
+        'Git::Base.binary_version is deprecated and will be removed in 6.0. ' \
+        'Use Git.git_version instead, which returns a Git::Version ' \
+        '(not an Array). For the legacy array shape, call: Git.git_version.to_a'
+      )
+      fetch_binary_version_array(binary_path)
     end
 
     private_class_method def self.execute_git_version(binary_path)
@@ -65,7 +69,7 @@ module Git
         'version'
       )
     rescue Errno::ENOENT
-      raise "Failed to get git version: #{binary_path} not found"
+      raise Git::Error, "Failed to get git version: #{binary_path} not found"
     end
 
     private_class_method def self.parse_version_string(raw_string)
@@ -74,6 +78,20 @@ module Git
 
       version_parts = version_match[0].split('.').map(&:to_i)
       version_parts.fill(0, version_parts.length...3)
+    end
+
+    # Fetch the git binary version as an Array, without emitting a deprecation warning.
+    # Used internally by the deprecated public methods to avoid cascading warnings.
+    #
+    # @return [Array<Integer>] e.g. [2, 42, 0]
+    # @api private
+    #
+    private_class_method def self.fetch_binary_version_array(binary_path)
+      result, status = execute_git_version(binary_path)
+
+      raise Git::Error, "Failed to get git version: #{status}\n#{result}" unless status.success?
+
+      parse_version_string(result)
     end
 
     def self.root_of_worktree(working_dir)

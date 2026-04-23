@@ -3,22 +3,22 @@
 require 'test_helper'
 
 class TestLibMeetsRequiredVersion < Test::Unit::TestCase
+  # These tests exercise the deprecated #meets_required_version?, #current_command_version,
+  # and #required_command_version methods. Git::Deprecation.stubs(:warn) suppresses the
+  # DeprecationException that :raise behavior would otherwise trigger.
+
   def test_with_supported_command_version
     lib = Git::Lib.new(nil, nil)
-    major_version, minor_version = lib.required_command_version
-    lib.define_singleton_method(:current_command_version) { [major_version, minor_version] }
+    Git::Deprecation.stubs(:warn)
+    # Stub the private helper so no real git binary is needed
+    lib.define_singleton_method(:fetch_current_version_array) { Git::MINIMUM_GIT_VERSION.to_a }
     assert lib.meets_required_version?
   end
 
   def test_with_old_command_version
     lib = Git::Lib.new(nil, nil)
-    major_version, minor_version = lib.required_command_version
-
-    # Set the major version to be returned by #current_command_version to be an
-    # earlier version than required
-    major_version -= 1
-
-    lib.define_singleton_method(:current_command_version) { [major_version, minor_version] }
+    Git::Deprecation.stubs(:warn)
+    lib.define_singleton_method(:fetch_current_version_array) { [1, 28] }
     assert !lib.meets_required_version?
   end
 
@@ -43,6 +43,8 @@ class TestLibMeetsRequiredVersion < Test::Unit::TestCase
     end
 
     lib.define_singleton_method(:next_version_index) { @next_version_index }
+
+    Git::Deprecation.stubs(:warn)
 
     expected_version = versions_to_test[lib.next_version_index][:expected_result]
     actual_version = lib.current_command_version
