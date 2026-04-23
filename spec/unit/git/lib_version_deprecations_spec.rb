@@ -11,9 +11,7 @@ RSpec.describe Git::Lib do
 
   describe '#current_command_version' do
     before do
-      allow(Git::Commands::Version).to receive(:new).and_return(
-        instance_double(Git::Commands::Version, call: double(stdout: 'git version 2.42.0'))
-      )
+      allow(lib).to receive(:git_version).and_return(Git::Version.new(2, 42, 0))
     end
 
     it 'emits a deprecation warning' do
@@ -41,9 +39,7 @@ RSpec.describe Git::Lib do
 
   describe '#compare_version_to' do
     before do
-      allow(Git::Commands::Version).to receive(:new).and_return(
-        instance_double(Git::Commands::Version, call: double(stdout: 'git version 2.42.0'))
-      )
+      allow(lib).to receive(:git_version).and_return(Git::Version.new(2, 42, 0))
     end
 
     it 'emits a deprecation warning' do
@@ -93,9 +89,7 @@ RSpec.describe Git::Lib do
 
   describe '#meets_required_version?' do
     before do
-      allow(Git::Commands::Version).to receive(:new).and_return(
-        instance_double(Git::Commands::Version, call: double(stdout: 'git version 2.42.0'))
-      )
+      allow(lib).to receive(:git_version).and_return(Git::Version.new(2, 42, 0))
     end
 
     it 'emits a deprecation warning' do

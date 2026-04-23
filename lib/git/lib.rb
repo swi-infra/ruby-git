@@ -1916,7 +1916,7 @@ module Git
         'Use Git.git_version instead, which returns a Git::Version (not an Array). ' \
         'For the legacy array shape, call: Git.git_version.to_a'
       )
-      fetch_current_version_array
+      git_version.to_a
     end
 
     # Returns current_command_version <=> other_version
@@ -1938,7 +1938,7 @@ module Git
         'Use Git.git_version with Git::Version comparison operators instead, ' \
         'e.g. Git.git_version <=> Git::Version.new(2, 41, 0)'
       )
-      fetch_current_version_array <=> other_version
+      git_version.to_a <=> other_version
     end
 
     # @deprecated Use {Git::MINIMUM_GIT_VERSION} constant instead, which returns a {Git::Version}
@@ -1964,7 +1964,7 @@ module Git
         'For enforcement, no action is needed: Git::Commands::Base#call automatically ' \
         'invokes validate_version!, which raises Git::VersionError on failure.'
       )
-      (fetch_current_version_array <=> Git::MINIMUM_GIT_VERSION.to_a) >= 0
+      git_version >= Git::MINIMUM_GIT_VERSION
     end
 
     # @deprecated Version validation is now handled automatically by
@@ -1972,7 +1972,7 @@ module Git
     #   Callers wanting the old warn-and-continue behavior must implement it themselves
     #   using: `Git.git_version >= Git::MINIMUM_GIT_VERSION`.
     #
-    def self.warn_if_old_command(lib) # rubocop:disable Metrics/MethodLength, Naming/PredicateMethod
+    def self.warn_if_old_command(_lib) # rubocop:disable Metrics/MethodLength, Naming/PredicateMethod
       Git::Deprecation.warn(
         'Git::Lib.warn_if_old_command is deprecated and will be removed in 6.0. ' \
         'Version validation is now handled automatically by Git::Commands::Base#validate_version!, ' \
@@ -1984,27 +1984,12 @@ module Git
       return true if @version_checked
 
       @version_checked = true
-      version_array = lib.send(:fetch_current_version_array)
-      unless (version_array <=> Git::MINIMUM_GIT_VERSION.to_a) >= 0
+      unless Git.git_version >= Git::MINIMUM_GIT_VERSION
         warn "The git gem requires git #{Git::MINIMUM_GIT_VERSION} or later, " \
-             "but only found #{version_array.join('.')}. You should probably upgrade."
+             "but only found #{Git.git_version}. You should probably upgrade."
       end
       true
     end
-
-    # Fetch the current git version as an Array of integers, without emitting a deprecation warning.
-    # Used internally by the deprecated public methods to avoid cascading warnings.
-    #
-    # @return [Array<Integer>] e.g. [2, 42, 0]
-    # @api private
-    #
-    def fetch_current_version_array
-      output = Git::Commands::Version.new(self).call.stdout
-      version = output[/\d+(\.\d+)+/]
-      version_parts = version.split('.').collect(&:to_i)
-      version_parts.fill(0, version_parts.length...3)
-    end
-    private :fetch_current_version_array
 
     COMMAND_CAPTURING_ARG_DEFAULTS = {
       in: nil,

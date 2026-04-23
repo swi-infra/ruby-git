@@ -382,7 +382,7 @@ class TestLib < Test::Unit::TestCase
 
   def test_compare_version_to
     lib = Git::Lib.new(nil, nil)
-    lib.define_singleton_method(:fetch_current_version_array) { [2, 42, 0] }
+    lib.stubs(:git_version).returns(Git::Version.new(2, 42, 0))
     Git::Deprecation.expects(:warn).at_least_once
     assert lib.compare_version_to(0, 43, 9) == 1
     assert lib.compare_version_to(2, 41, 0) == 1
