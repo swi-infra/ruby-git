@@ -548,6 +548,6 @@ module Git
       '(not an Array). For the legacy array shape, call: Git.git_version.to_a. ' \
       'The optional binary_path argument is preserved: Git.git_version(binary_path).'
     )
-    Base.send(:fetch_binary_version_array, binary_path)
+    git_version(binary_path).to_a
   end
 end

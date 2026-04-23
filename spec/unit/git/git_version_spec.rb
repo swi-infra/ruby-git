@@ -106,7 +106,7 @@ RSpec.describe Git do
 
     before do
       allow(Git::Deprecation).to receive(:warn)
-      allow(Git::Base).to receive(:fetch_binary_version_array).and_return([2, 42, 0])
+      allow(Git).to receive(:git_version).and_return(Git::Version.new(2, 42, 0))
     end
 
     it 'emits a deprecation warning' do
@@ -140,10 +140,12 @@ RSpec.describe Git::Base do
       allow(Git::Deprecation).to receive(:warn)
     end
 
-    it 'emits a deprecation warning' do
-      allow(described_class).to receive(:execute_git_version)
-        .and_return(['git version 2.42.0', instance_double(Process::Status, success?: true)])
+    before do
+      allow(Git::Deprecation).to receive(:warn)
+      allow(Git).to receive(:git_version).and_return(Git::Version.new(2, 42, 0))
+    end
 
+    it 'emits a deprecation warning' do
       described_class.binary_version(binary_path)
 
       expect(Git::Deprecation).to have_received(:warn).with(
@@ -154,18 +156,12 @@ RSpec.describe Git::Base do
     end
 
     it 'emits exactly one deprecation warning per call' do
-      allow(described_class).to receive(:execute_git_version)
-        .and_return(['git version 2.42.0', instance_double(Process::Status, success?: true)])
-
       described_class.binary_version(binary_path)
 
       expect(Git::Deprecation).to have_received(:warn).exactly(1).time
     end
 
     it 'still returns an Array of integers' do
-      allow(described_class).to receive(:execute_git_version)
-        .and_return(['git version 2.42.0', instance_double(Process::Status, success?: true)])
-
       expect(described_class.binary_version(binary_path)).to eq([2, 42, 0])
     end
   end
