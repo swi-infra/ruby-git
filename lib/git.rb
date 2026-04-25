@@ -510,10 +510,10 @@ module Git
   # arbitrary binary path today.
   #
   # Phase 3 of the redesign (redesign/2_architecture_redesign.md) introduces
-  # Git::GlobalContext, which will accept a binary_path: constructor argument. Once that
+  # Git::ExecutionContext::Global, which will accept a binary_path: constructor argument. Once that
   # lands, replace the Open3 call with:
   #
-  #   Git::Commands::Version.new(Git::GlobalContext.new(binary_path: path)).call.stdout
+  #   Git::Commands::Version.new(Git::ExecutionContext::Global.new(binary_path: path)).call.stdout
   #
   # and remove the Open3 dependency from this method.
   def self.run_git_version(path)
