@@ -23,64 +23,60 @@ risk and allows for a gradual, controlled migration to the new architecture.
 | ----- | ------ | ----------- |
 | Phase 1 | ✅ Complete | Foundation and scaffolding |
 | Phase 2 | ✅ Complete | Migrating commands (all checklist items done) |
-| Phase 3 | ⏳ Not Started | Refactoring public interface |
+| Phase 3 | ⏳ In Progress | Refactoring public interface (Task 1 ✅) |
 | Phase 4 | ⏳ Not Started | Final cleanup and release |
 
 ### Next Task
 
-**Phase 3, Task 1: Create `Git::RepositoryContext` and `Git::GlobalContext`**
+**Phase 3, Task 2: Refactor factory methods (`Git.open`, `Git.clone`, `Git.init`)**
 
-Phase 2 is complete — all commands have been migrated to `Git::Commands::*` classes.
-Phase 3 begins with creating proper `Git::ExecutionContext` subclasses. These replace
-the current `method_missing` delegation stub and become the context objects that
-`Git::Commands::*` classes receive once the factory methods are refactored.
+Phase 3, Task 1 is complete — `Git::ExecutionContext` is now a real base class, and
+`Git::ExecutionContext::Repository` and `Git::ExecutionContext::Global` are implemented and fully tested.
+
+Task 2 refactors the factory methods in `Git::Base` and `Git.rb` so that they
+instantiate a `Git::ExecutionContext::Repository` or `Git::ExecutionContext::Global` and pass it to
+`Git::Commands::*` classes rather than using `Git::Lib` directly.
 
 #### Workflow
 
-1. **Analyze**: Review `lib/git/execution_context.rb`, and the relevant private methods
-   in `lib/git/lib.rb`: `initialize_from_base`, `initialize_from_hash`, `env_overrides`,
-   `global_opts`, `command_capturing`, `command_streaming`, `command_line_capturing`, and
-   `command_line_streaming`. These are the methods to extract into `Git::ExecutionContext`
-   and its subclasses.
+1. **Analyze**: Review `lib/git/base.rb` (`Git::Base.open`, `Git::Base.clone`,
+   `Git::Base.init`, `Git::Base.bare`) and `lib/git.rb` factory methods. Understand
+   how `Git::Lib.new(base)` is used as the execution context today.
 
-2. **Design**: Plan the interfaces for `Git::RepositoryContext` and `Git::GlobalContext`:
-   - Both must implement `command_capturing` and `command_streaming` (the interface
-     expected by `Git::Commands::Base`)
-   - `Git::RepositoryContext` manages `git_dir`, `git_work_dir`, `git_index_file`,
-     and SSH config
-   - `Git::GlobalContext` has no repository paths (for `init`, `clone`, `version`)
-   - Shared execution logic lives in the `Git::ExecutionContext` base class
+2. **Design**: Plan the refactoring:
+   - `Git.open` / `Git::Base.open` and `Git.bare` → create a `Git::ExecutionContext::Repository`
+     via `Git::ExecutionContext::Repository.from_hash(...)` and store it on the `Git::Base` instance
+   - `Git.init` / `Git::Base.init` → use a `Git::ExecutionContext::Global` for the init command,
+     then switch to a `Git::ExecutionContext::Repository` after the repo is created
+   - `Git.clone` / `Git::Base.clone` → use a `Git::ExecutionContext::Global` for the clone command,
+     then build a `Git::ExecutionContext::Repository` for the resulting repo
+   - `Git::Lib` delegation from `Git::Commands::*` classes must route through the
+     new context objects
 
-3. **TDD**: Write spec files *before* implementing:
-   - `spec/unit/git/repository_context_spec.rb`
-   - `spec/unit/git/global_context_spec.rb`
-   - Test: initialization with paths, `env_overrides` hash contents, delegation to
-     `command_capturing`/`command_streaming`
+3. **TDD**: Write or extend spec files *before* changing factory methods:
+   - `spec/unit/git/lib_command_spec.rb` — verify the new context objects are created
+   - `spec/integration/` — end-to-end tests for `Git.open`, `Git.clone`, `Git.init`
 
 4. **Implement**:
-   - Extract execution logic from `Git::Lib` into `Git::ExecutionContext` base class
-   - Create `Git::RepositoryContext < Git::ExecutionContext` in
-     `lib/git/repository_context.rb`
-   - Create `Git::GlobalContext < Git::ExecutionContext` in
-     `lib/git/global_context.rb`
+   - Update `Git::Base#initialize` to accept and store a `Git::ExecutionContext::Repository`
+   - Update `Git::Base.open` / `.bare` to create a `Git::ExecutionContext::Repository`
+   - Update `Git::Base.clone` to use `Git::ExecutionContext::Global` for the clone step
+   - Update `Git::Base.init` to use `Git::ExecutionContext::Global` for the init step
 
 5. **Verify**:
-   - `bundle exec rspec spec/unit/git/repository_context_spec.rb` — new tests pass
-   - `bundle exec rspec spec/unit/git/global_context_spec.rb` — new tests pass
    - `bundle exec rspec` — all RSpec tests pass
    - `bundle exec rake test` — legacy TestUnit tests pass
    - `bundle exec rubocop` — no lint errors
    - `bundle exec yard` — no yardoc errors
 
 6. **Update Checklist**: Update the Phase 3 progress tracker in this document when
-   each sub-task is complete. Update the "Next Task" heading and Workflow steps to
-   describe the next Phase 3 sub-task (e.g. "Task 2: Refactor factory methods").
+   Task 2 is complete. Update the "Next Task" heading to describe Task 3 (populate
+   `Git::Repository` facade).
 
 #### Reference Files
 
-- Execution methods to extract: `lib/git/lib.rb` (`env_overrides`, `global_opts`,
-  `command_capturing`, `command_streaming`)
-- Current stub: `lib/git/execution_context.rb`
+- Factory methods: `lib/git/base.rb`, `lib/git.rb`
+- Context classes: `lib/git/execution_context/repository.rb`, `lib/git/execution_context/global.rb`
 - Phase 3 plan: see "Phase 3: Refactoring the Public Interface" section below
 
 ## Phase 1: Foundation and Scaffolding
@@ -108,8 +104,9 @@ logic. The gem will be fully functional after this phase.*
 3. **Introduce New Core Classes (Empty Shells)**
 
    - `Git::ExecutionContext` in `lib/git/execution_context.rb` ✅
-     - Currently a thin wrapper around `Git::Lib` using `method_missing` delegation
-     - `GlobalContext` and `RepositoryContext` subclasses will be added in Phase 3
+     - Real base class with `command_capturing`, `command_streaming`, `git_version`
+     - `Git::ExecutionContext::Repository` subclass in `lib/git/execution_context/repository.rb` ✅
+     - `Git::ExecutionContext::Global` subclass in `lib/git/execution_context/global.rb` ✅
 
    - `Git::Repository` in `lib/git/repository.rb` ✅
      - Currently an empty shell, to be populated in Phase 3
@@ -131,9 +128,9 @@ a Test-Driven Development workflow.*
 **Important Note**: During this phase, `Git::Lib` acts as a stand-in for the
 `ExecutionContext` hierarchy:
 
-- `Git::Lib.new(nil, logger)` effectively acts like `GlobalContext` (no repository
+- `Git::Lib.new(nil, logger)` effectively acts like `ExecutionContext::Global` (no repository
   paths set)
-- `Git::Lib.new(base, logger)` effectively acts like `RepositoryContext` (repository
+- `Git::Lib.new(base, logger)` effectively acts like `ExecutionContext::Repository` (repository
   paths set)
 
 All new `Git::Commands::*` classes should accept any object that responds to
@@ -996,9 +993,9 @@ breaking the final ties to the old implementation.*
 
    - These methods will now be responsible for creating an instance of the
      appropriate `Git::ExecutionContext` subclass and injecting it:
-     - `Git.init` and `Git.clone`: Use `Git::GlobalContext` to run the command, then
+     - `Git.init` and `Git.clone`: Use `Git::ExecutionContext::Global` to run the command, then
        open the repository
-     - `Git.open` and `Git.bare`: Create `Git::RepositoryContext` and inject it into
+     - `Git.open` and `Git.bare`: Create `Git::ExecutionContext::Repository` and inject it into
        `Git::Repository`
 
     The return value of these factories will now be a `Git::Repository` instance, not
