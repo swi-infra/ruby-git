@@ -166,14 +166,8 @@ module Git
     # @param [String, Array<String>] paths a file or files to be added to the repository
     #   relative to the worktree root
     #
-    # @param [Hash] options
-    #
-    # @option options [Boolean] :all Add, modify, and remove index entries to match the worktree
-    #
-    # @option options [Boolean] :force Allow adding otherwise ignored files
-    #
-    def add(paths = '.', **options)
-      lib.add(paths, options)
+    def add(paths = '.', **)
+      facade_repository.add(paths, **)
     end
 
     # adds a new remote to this repository
@@ -346,6 +340,16 @@ module Git
       @lib ||= Git::Lib.new(self, @logger)
     end
 
+    # Returns the {Git::Repository} facade for this repository
+    #
+    # @return [Git::Repository]
+    # @api private
+    def facade_repository
+      @facade_repository ||= Git::Repository.new(
+        execution_context: Git::ExecutionContext::Repository.from_base(self)
+      )
+    end
+
     # Returns the per-instance git_ssh configuration value
     #
     # This may be:
@@ -419,7 +423,7 @@ module Git
 
     # resets the working directory to the provided commitish
     def reset(commitish = nil, opts = {})
-      lib.reset(commitish, opts)
+      facade_repository.reset(commitish, **opts)
     end
 
     # resets the working directory to the commitish with '--hard'
