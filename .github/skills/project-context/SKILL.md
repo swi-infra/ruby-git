@@ -123,7 +123,7 @@ at each call site; callers may override when needed. The execution layer
 > `literal '--no-progress'` inside a command class.
 >
 > **Correct pattern:** `flag_option :edit, negatable: true` in the command;
-> `edit: false` passed from the facade call site.
+> `no_edit: true` passed from the facade call site.
 
 ### Validation Boundaries
 

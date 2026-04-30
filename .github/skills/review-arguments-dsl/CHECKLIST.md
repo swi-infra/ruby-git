@@ -98,10 +98,10 @@ output-control, editor-suppression, or progress flags. Declare these as
 > `literal '--no-progress'` inside a command class.
 >
 > **Correct pattern:** `flag_option :edit, negatable: true` in the command;
-> `edit: false` passed from the facade call site.
+> `no_edit: true` passed from the facade call site.
 
 **The `--edit` / `--no-edit` pair:** Model as `flag_option :edit, negatable: true`.
-The facade (`Git::Lib`) passes `edit: false` at each call site. Do **not** hardcode
+The facade (`Git::Lib`) passes `no_edit: true` at each call site. Do **not** hardcode
 `literal '--no-edit'` — that prevents the facade from controlling the option — and do
 **not** exclude `--edit` from the DSL.
 
@@ -154,7 +154,7 @@ man-page notation: `=` → `inline: true`; space → omit `inline:`.
 Common examples: `--branches[=<pattern>]`, `--tags[=<pattern>]`,
 `--remotes[=<pattern>]`, `--dirstat[=<param>...]`.
 
-Tri-state examples: `--track[=direct|inherit]` / `--no-track`,
+Negatable value-option examples: `--track[=direct|inherit]` / `--no-track`,
 `--recurse-submodules[=yes|on-demand|no]` / `--no-recurse-submodules`.
 
 **Do not** use `flag_option` for these — it silently drops the value when one is
@@ -626,20 +626,23 @@ Every keyword/positional parameter documented for `call` must correspond to a DS
 entry and vice versa — mismatches indicate either a missing DSL entry or stale
 documentation.
 
-**`negatable:` options must document both emitted forms.** When the DSL declares
+**`negatable:` options require two `@option` tags.** When the DSL declares
 `flag_option :foo, negatable: true` or `flag_or_value_option :foo, negatable: true`,
-the `@option` prose must explicitly state that `false` emits `--no-foo`. An
-`@option` that only describes the positive (`true`) form is missing documentation
-for callers who pass `false`.
+two separate `@option` entries are required: one for the positive key (`:foo`) and
+one for the negative companion key (`:no_foo`). Both follow standard boolean
+semantics (`true` emits the flag, `false`/omitted emits nothing); both use `(false)`
+as the default value. A single merged tag or "Pass `false` for `--no-foo`" prose
+does not satisfy this requirement.
 
 ```ruby
-# ❌ Missing — only describes the positive form
-# @option options [Boolean] :create_reflog (nil) create the branch's reflog
+# ❌ Missing negative companion tag
+# @option options [Boolean] :create_reflog (false) create the branch's reflog
 
-# ✅ Correct — documents both forms
-# @option options [Boolean] :create_reflog (nil) create the branch's reflog
+# ✅ Both forms documented with separate tags
+# @option options [Boolean] :create_reflog (false) create the branch's reflog
 #
-#   Pass `true` for `--create-reflog`, `false` for `--no-create-reflog`.
+# @option options [Boolean] :no_create_reflog (false) suppress branch reflog
+#   creation (`--no-create-reflog`)
 ```
 
 **`@option` descriptions must use the emitted long flag form.** The DSL emits the
