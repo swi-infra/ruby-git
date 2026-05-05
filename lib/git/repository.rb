@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'git/execution_context/repository'
+require 'git/repository/committing'
 require 'git/repository/staging'
 
 module Git
@@ -29,6 +30,7 @@ module Git
   # @api public
   #
   class Repository
+    include Git::Repository::Committing
     include Git::Repository::Staging
 
     # @param execution_context [Git::ExecutionContext::Repository] the context used

@@ -29,13 +29,13 @@ module Git
         literal 'commit-tree'
 
         # Parent commits — each -p adds a parent object
-        value_option :p, repeatable: true
+        value_option %i[parent p], as: '-p', repeatable: true
 
         # GPG signing — -S[<keyid>] / --gpg-sign[=<keyid>] / --no-gpg-sign
         flag_or_value_option %i[gpg_sign S], negatable: true, inline: true
 
         # Commit log message paragraphs
-        value_option :m, repeatable: true, allow_empty: true
+        value_option %i[message m], as: '-m', repeatable: true, allow_empty: true
 
         # Read commit log message from file(s)
         value_option :F, repeatable: true
@@ -56,8 +56,8 @@ module Git
       #
       #     @param options [Hash] command options
       #
-      #     @option options [String, Array<String>] :p (nil) parent commit
-      #       object id(s)
+      #     @option options [String, Array<String>] :parent (nil) parent commit
+      #       object id(s). Alias: `:p`
       #
       #       Each value adds a `-p <parent>` flag. A commit may have zero or
       #       more parents. With exactly one parent it is an ordinary commit;
@@ -73,8 +73,8 @@ module Git
       #     @option options [Boolean] :no_gpg_sign (false) countermand commit.gpgSign
       #       configuration (`--no-gpg-sign`)
       #
-      #     @option options [String, Array<String>] :m (nil) a paragraph
-      #       in the commit log message
+      #     @option options [String, Array<String>] :message (nil) a paragraph
+      #       in the commit log message. Alias: `:m`
       #
       #       Can be given more than once; each message becomes its own paragraph.
       #
