@@ -177,10 +177,10 @@ module Git
     #
     #   @param options [Hash] options for the add command
     #
-    #   @option options [Boolean] :all (false) add, modify, and remove index
+    #   @option options [Boolean, nil] :all (nil) add, modify, and remove index
     #     entries to match the worktree
     #
-    #   @option options [Boolean] :force (false) allow adding otherwise ignored
+    #   @option options [Boolean, nil] :force (nil) allow adding otherwise ignored
     #     files
     #
     #   @return [String] git's stdout from the add
@@ -411,9 +411,9 @@ module Git
     #   of paths to limit the search to or nil for no limit
     # @param opts [Hash] options to pass to the underlying `git grep` command
     #
-    # @option opts [Boolean] :ignore_case (false) ignore case when matching
-    # @option opts [Boolean] :invert_match (false) select non-matching lines
-    # @option opts [Boolean] :extended_regexp (false) use extended regular expressions
+    # @option opts [Boolean, nil] :ignore_case (nil) ignore case when matching
+    # @option opts [Boolean, nil] :invert_match (nil) select non-matching lines
+    # @option opts [Boolean, nil] :extended_regexp (nil) use extended regular expressions
     # @option opts [String] :object (HEAD) the object to search from
     #
     # @return [Hash<String, Array>] a hash of arrays
@@ -547,10 +547,10 @@ module Git
     #   @param branch [String] the branch to push
     #   @param options [Hash] options to pass to the push command
     #
-    #   @option opts [Boolean] :mirror (false) Push all refs under refs/heads/, refs/tags/ and refs/remotes/
-    #   @option opts [Boolean] :delete (false) Delete refs that don't exist on the remote
-    #   @option opts [Boolean] :force (false) Force updates
-    #   @option opts [Boolean] :tags (false) Push all refs under refs/tags/
+    #   @option opts [Boolean, nil] :mirror (nil) Push all refs under refs/heads/, refs/tags/ and refs/remotes/
+    #   @option opts [Boolean, nil] :delete (nil) Delete refs that don't exist on the remote
+    #   @option opts [Boolean, nil] :force (nil) Force updates
+    #   @option opts [Boolean, nil] :tags (nil) Push all refs under refs/tags/
     #   @option opts [Array, String] :push_options (nil) Push options to transmit
     #
     #   @return [Void]
@@ -580,7 +580,7 @@ module Git
     # @param branch [String] the branch to pull from
     # @param opts [Hash] options to pass to the pull command
     #
-    # @option opts [Boolean] :allow_unrelated_histories (false) Merges histories of
+    # @option opts [Boolean, nil] :allow_unrelated_histories (nil) Merges histories of
     #   two projects that started their lives independently
     # @example pulls from origin/master
     #   @git.pull

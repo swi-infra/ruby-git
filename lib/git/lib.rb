@@ -115,7 +115,7 @@ module Git
     #
     # @param [Hash] opts the options for this command
     #
-    # @option opts [Boolean] :bare (false) if true, clone as a bare repository
+    # @option opts [Boolean, nil] :bare (nil) if true, clone as a bare repository
     #
     # @option opts [String] :branch the branch to checkout
     #
@@ -144,7 +144,7 @@ module Git
     #
     # @option opts [String] :remote the name of the remote
     #
-    # @option opts [Boolean] :recursive after the clone is created, initialize all
+    # @option opts [Boolean, nil] :recursive (nil) after the clone is created, initialize all
     #    within, using their default settings
     #
     # @option opts [Numeric, nil] :timeout the number of seconds to wait for the
@@ -1413,19 +1413,19 @@ module Git
     # @param message [String, nil] commit message for merge commit
     # @param opts [Hash] merge options
     #
-    # @option opts [Boolean] :no_commit (nil) stop before creating merge commit
+    # @option opts [Boolean, nil] :no_commit (nil) stop before creating merge commit
     #   (deprecated: use no_commit: true instead)
-    # @option opts [Boolean] :no_ff (nil) create merge commit even for fast-forward
+    # @option opts [Boolean, nil] :no_ff (nil) create merge commit even for fast-forward
     #   (deprecated: use no_ff: true instead)
     # @option opts [String] :m (nil) commit message (deprecated: use message: option)
-    # @option opts [Boolean] :commit (nil) true for --commit (`--commit`)
-    # @option opts [Boolean] :ff (nil) true for --ff (`--ff`)
-    # @option opts [Boolean] :ff_only (nil) only merge if fast-forward possible
-    # @option opts [Boolean] :squash (nil) squash commits into single commit
+    # @option opts [Boolean, nil] :commit (nil) true for --commit (`--commit`)
+    # @option opts [Boolean, nil] :ff (nil) true for --ff (`--ff`)
+    # @option opts [Boolean, nil] :ff_only (nil) only merge if fast-forward possible
+    # @option opts [Boolean, nil] :squash (nil) squash commits into single commit
     # @option opts [String] :message (nil) commit message
     # @option opts [String] :strategy (nil) merge strategy (e.g., 'ort', 'ours')
     # @option opts [String, Array<String>] :strategy_option (nil) strategy-specific options
-    # @option opts [Boolean] :allow_unrelated_histories (nil) allow merging unrelated histories
+    # @option opts [Boolean, nil] :allow_unrelated_histories (nil) allow merging unrelated histories
     #
     # @return [String] the command output
     #
@@ -1447,10 +1447,10 @@ module Git
     #
     #   @param options [Hash] merge-base options
     #
-    #   @option options [Boolean] :octopus (nil) compute best ancestor for n-way merge
-    #   @option options [Boolean] :independent (nil) list commits not reachable from others
-    #   @option options [Boolean] :fork_point (nil) find fork point
-    #   @option options [Boolean] :all (nil) output all merge bases
+    #   @option options [Boolean, nil] :octopus (nil) compute best ancestor for n-way merge
+    #   @option options [Boolean, nil] :independent (nil) list commits not reachable from others
+    #   @option options [Boolean, nil] :fork_point (nil) find fork point
+    #   @option options [Boolean, nil] :all (nil) output all merge bases
     #
     # @return [Array<String>] array of commit SHAs
     #
@@ -1541,16 +1541,16 @@ module Git
     #
     #   @param opts [Hash] options for creating the tag
     #
-    #   @option opts [Boolean] :annotate (nil) create an unsigned, annotated tag object.
+    #   @option opts [Boolean, nil] :annotate (nil) create an unsigned, annotated tag object.
     #     Requires `:message` or `:file`.
     #
     #     Alias: `:a`
     #
-    #   @option opts [Boolean] :sign (nil) create a GPG-signed tag. Requires `:message` or `:file`.
+    #   @option opts [Boolean, nil] :sign (nil) create a GPG-signed tag. Requires `:message` or `:file`.
     #
     #     Alias: `:s`
     #
-    #   @option opts [Boolean] :force (nil) replace an existing tag with the given name.
+    #   @option opts [Boolean, nil] :force (nil) replace an existing tag with the given name.
     #
     #     Alias: `:f`
     #
@@ -1567,16 +1567,16 @@ module Git
     #
     #   @param opts [Hash] options for creating the tag
     #
-    #   @option opts [Boolean] :annotate (nil) create an unsigned, annotated tag object.
+    #   @option opts [Boolean, nil] :annotate (nil) create an unsigned, annotated tag object.
     #     Requires `:message` or `:file`.
     #
     #     Alias: `:a`
     #
-    #   @option opts [Boolean] :sign (nil) create a GPG-signed tag. Requires `:message` or `:file`.
+    #   @option opts [Boolean, nil] :sign (nil) create a GPG-signed tag. Requires `:message` or `:file`.
     #
     #     Alias: `:s`
     #
-    #   @option opts [Boolean] :force (nil) replace an existing tag with the given name.
+    #   @option opts [Boolean, nil] :force (nil) replace an existing tag with the given name.
     #
     #     Alias: `:f`
     #
@@ -1593,7 +1593,7 @@ module Git
     #
     #   @param opts [Hash] options
     #
-    #   @option opts [Boolean] :delete (nil) delete the named tag.
+    #   @option opts [Boolean, nil] :delete (nil) delete the named tag.
     #
     #     Alias: `:d`
     #
@@ -1637,15 +1637,15 @@ module Git
     #
     #   @param options [Hash] push options
     #
-    #   @option options [Boolean] :all (nil) Push all branches
+    #   @option options [Boolean, nil] :all (nil) Push all branches
     #
-    #   @option options [Boolean] :mirror (nil) Push all refs
+    #   @option options [Boolean, nil] :mirror (nil) Push all refs
     #
-    #   @option options [Boolean] :tags (nil) Push all tags
+    #   @option options [Boolean, nil] :tags (nil) Push all tags
     #
-    #   @option options [Boolean] :force (nil) Force updates
+    #   @option options [Boolean, nil] :force (nil) Force updates
     #
-    #   @option options [Boolean] :delete (nil) Delete the named remote ref
+    #   @option options [Boolean, nil] :delete (nil) Delete the named remote ref
     #
     #   @option options [String, Array<String>] :push_option (nil) Server-side push option values
     #
@@ -1660,15 +1660,15 @@ module Git
     #
     #   @param options [Hash] push options
     #
-    #   @option options [Boolean] :all (nil) Push all branches
+    #   @option options [Boolean, nil] :all (nil) Push all branches
     #
-    #   @option options [Boolean] :mirror (nil) Push all refs
+    #   @option options [Boolean, nil] :mirror (nil) Push all refs
     #
-    #   @option options [Boolean] :tags (nil) Push all tags
+    #   @option options [Boolean, nil] :tags (nil) Push all tags
     #
-    #   @option options [Boolean] :force (nil) Force updates
+    #   @option options [Boolean, nil] :force (nil) Force updates
     #
-    #   @option options [Boolean] :delete (nil) Delete the named remote ref
+    #   @option options [Boolean, nil] :delete (nil) Delete the named remote ref
     #
     #   @option options [String, Array<String>] :push_option (nil) Server-side push option values
     #
@@ -1685,15 +1685,15 @@ module Git
     #
     #   @param options [Hash] push options
     #
-    #   @option options [Boolean] :all (nil) Push all branches
+    #   @option options [Boolean, nil] :all (nil) Push all branches
     #
-    #   @option options [Boolean] :mirror (nil) Push all refs
+    #   @option options [Boolean, nil] :mirror (nil) Push all refs
     #
-    #   @option options [Boolean] :tags (nil) Push all tags
+    #   @option options [Boolean, nil] :tags (nil) Push all tags
     #
-    #   @option options [Boolean] :force (nil) Force updates
+    #   @option options [Boolean, nil] :force (nil) Force updates
     #
-    #   @option options [Boolean] :delete (nil) Delete the named remote ref
+    #   @option options [Boolean, nil] :delete (nil) Delete the named remote ref
     #
     #   @option options [String, Array<String>] :push_option (nil) Server-side push option values
     #

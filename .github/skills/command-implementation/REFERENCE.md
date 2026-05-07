@@ -348,9 +348,9 @@ module Git
         #
         #     @param options [Hash] command options
         #
-        #     @option options [Boolean] :simple_flag (false) One-sentence description without period
+        #     @option options [Boolean, nil] :simple_flag (nil) One-sentence description without period
         #
-        #     @option options [Boolean, Integer] :force (false) Short description without period
+        #     @option options [Boolean, Integer, nil] :force (nil) Short description without period
         #
         #       When an integer is given, the flag is repeated that many times (up to the
         #       configured `max_times:` limit).
@@ -455,7 +455,7 @@ an explicit override.
 #
 #   @param options [Hash] command options
 #
-#   @option options [Boolean] :unordered (false) Unordered output
+#   @option options [Boolean, nil] :unordered (nil) Unordered output
 #
 #   @return [Git::CommandLineResult] the result of calling `git cat-file --batch`
 #

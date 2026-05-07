@@ -89,9 +89,9 @@ module Git
         #
         #   @param options [Hash] command options
         #
-        #   @option options [Boolean] :use_mailmap (false) Remap identities via mailmap (`--use-mailmap`)
+        #   @option options [Boolean, nil] :use_mailmap (nil) Remap identities via mailmap (`--use-mailmap`)
         #
-        #   @option options [Boolean] :no_use_mailmap (false) Suppress mailmap remapping (`--no-use-mailmap`)
+        #   @option options [Boolean, nil] :no_use_mailmap (nil) Suppress mailmap remapping (`--no-use-mailmap`)
         #
         #   @return [Git::CommandLineResult] the result of calling `git cat-file`
         #
@@ -110,12 +110,12 @@ module Git
         #
         #   @param options [Hash] command options
         #
-        #   @option options [Boolean] :allow_unknown_type (false) Allow querying broken or corrupt objects of
+        #   @option options [Boolean, nil] :allow_unknown_type (nil) Allow querying broken or corrupt objects of
         #     unknown type
         #
-        #   @option options [Boolean] :use_mailmap (false) Remap identities via mailmap (`--use-mailmap`)
+        #   @option options [Boolean, nil] :use_mailmap (nil) Remap identities via mailmap (`--use-mailmap`)
         #
-        #   @option options [Boolean] :no_use_mailmap (false) Suppress mailmap remapping (`--no-use-mailmap`)
+        #   @option options [Boolean, nil] :no_use_mailmap (nil) Suppress mailmap remapping (`--no-use-mailmap`)
         #
         #   @return [Git::CommandLineResult] the result of calling `git cat-file`
         #
@@ -134,12 +134,12 @@ module Git
         #
         #   @param options [Hash] command options
         #
-        #   @option options [Boolean] :allow_unknown_type (false) Allow querying broken or corrupt objects of
+        #   @option options [Boolean, nil] :allow_unknown_type (nil) Allow querying broken or corrupt objects of
         #     unknown type
         #
-        #   @option options [Boolean] :use_mailmap (false) Remap identities via mailmap (`--use-mailmap`)
+        #   @option options [Boolean, nil] :use_mailmap (nil) Remap identities via mailmap (`--use-mailmap`)
         #
-        #   @option options [Boolean] :no_use_mailmap (false) Suppress mailmap remapping (`--no-use-mailmap`)
+        #   @option options [Boolean, nil] :no_use_mailmap (nil) Suppress mailmap remapping (`--no-use-mailmap`)
         #
         #   @return [Git::CommandLineResult] the result of calling `git cat-file`
         #
@@ -158,9 +158,9 @@ module Git
         #
         #   @param options [Hash] command options
         #
-        #   @option options [Boolean] :use_mailmap (false) Remap identities via mailmap (`--use-mailmap`)
+        #   @option options [Boolean, nil] :use_mailmap (nil) Remap identities via mailmap (`--use-mailmap`)
         #
-        #   @option options [Boolean] :no_use_mailmap (false) Suppress mailmap remapping (`--no-use-mailmap`)
+        #   @option options [Boolean, nil] :no_use_mailmap (nil) Suppress mailmap remapping (`--no-use-mailmap`)
         #
         #   @return [Git::CommandLineResult] the result of calling `git cat-file`
         #
@@ -179,9 +179,9 @@ module Git
         #
         #   @param options [Hash] command options
         #
-        #   @option options [Boolean] :use_mailmap (false) Remap identities via mailmap (`--use-mailmap`)
+        #   @option options [Boolean, nil] :use_mailmap (nil) Remap identities via mailmap (`--use-mailmap`)
         #
-        #   @option options [Boolean] :no_use_mailmap (false) Suppress mailmap remapping (`--no-use-mailmap`)
+        #   @option options [Boolean, nil] :no_use_mailmap (nil) Suppress mailmap remapping (`--no-use-mailmap`)
         #
         #   @return [Git::CommandLineResult] the result of calling `git cat-file`
         #

@@ -50,10 +50,10 @@ module Git
       #
       # @param opts [Hash] additional options forwarded to `git merge`
       #
-      # @option opts [Boolean] :no_commit (false) stop before creating the merge commit
+      # @option opts [Boolean, nil] :no_commit (nil) stop before creating the merge commit
       #   (`--no-commit`)
       #
-      # @option opts [Boolean] :no_ff (false) create a merge commit even when
+      # @option opts [Boolean, nil] :no_ff (nil) create a merge commit even when
       #   fast-forward is possible (`--no-ff`)
       #
       # @option opts [String] :message (nil) commit message

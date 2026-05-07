@@ -129,35 +129,35 @@ module Git
       #
       #     @param options [Hash] command options
       #
-      #     @option options [Boolean] :quiet (false) Suppress all output
+      #     @option options [Boolean, nil] :quiet (nil) Suppress all output
       #
       #       Alias: :q
       #
-      #     @option options [Boolean] :verbose (false) Enable verbose output during fetch and merge
+      #     @option options [Boolean, nil] :verbose (nil) Enable verbose output during fetch and merge
       #
       #       Alias: :v
       #
-      #     @option options [Boolean, String] :recurse_submodules (false) Control submodule
+      #     @option options [Boolean, String, nil] :recurse_submodules (nil) Control submodule
       #       commit fetching (`--recurse-submodules`)
       #
       #       Pass a string such as `'yes'`, `'on-demand'`, or `'no'` for
       #       `--recurse-submodules=<value>`.
       #
-      #     @option options [Boolean] :no_recurse_submodules (false) Disable submodule
+      #     @option options [Boolean, nil] :no_recurse_submodules (nil) Disable submodule
       #       commit fetching (`--no-recurse-submodules`)
       #
-      #     @option options [Boolean] :commit (false) Perform the merge and commit the result
+      #     @option options [Boolean, nil] :commit (nil) Perform the merge and commit the result
       #       (`--commit`)
       #
-      #     @option options [Boolean] :no_commit (false) Merge but do not commit the result
+      #     @option options [Boolean, nil] :no_commit (nil) Merge but do not commit the result
       #       (`--no-commit`)
       #
-      #     @option options [Boolean] :edit (false) Open an editor for the merge commit message
+      #     @option options [Boolean, nil] :edit (nil) Open an editor for the merge commit message
       #       (`--edit`)
       #
       #       Alias: :e
       #
-      #     @option options [Boolean] :no_edit (false) Do not open an editor for the merge commit
+      #     @option options [Boolean, nil] :no_edit (nil) Do not open an editor for the merge commit
       #       message (`--no-edit`)
       #
       #     @option options [String] :cleanup (nil) Merge-message cleanup mode
@@ -165,55 +165,55 @@ module Git
       #       Determines how the merge message is cleaned up before committing.
       #       For example, `'strip'`, `'whitespace'`, `'verbatim'`, `'scissors'`, `'default'`.
       #
-      #     @option options [Boolean] :ff_only (false) Require fast-forward merge or up-to-date HEAD
+      #     @option options [Boolean, nil] :ff_only (nil) Require fast-forward merge or up-to-date HEAD
       #
       #       Refuses to merge unless the current HEAD is already up to date or the
       #       merge can be resolved as a fast-forward.
       #
-      #     @option options [Boolean] :ff (false) Allow fast-forward merge (`--ff`)
+      #     @option options [Boolean, nil] :ff (nil) Allow fast-forward merge (`--ff`)
       #
-      #     @option options [Boolean] :no_ff (false) Disable fast-forward merge, always creating a
+      #     @option options [Boolean, nil] :no_ff (nil) Disable fast-forward merge, always creating a
       #       merge commit (`--no-ff`)
       #
-      #     @option options [Boolean, String] :gpg_sign (false) GPG-sign the resulting merge commit
+      #     @option options [Boolean, String, nil] :gpg_sign (nil) GPG-sign the resulting merge commit
       #       (`--gpg-sign`)
       #
       #       Pass a key-ID string to select the signing key. Alias: :S
       #
-      #     @option options [Boolean] :no_gpg_sign (false) Countermand commit.gpgSign configuration
+      #     @option options [Boolean, nil] :no_gpg_sign (nil) Countermand commit.gpgSign configuration
       #       (`--no-gpg-sign`)
       #
-      #     @option options [Boolean, Integer] :log (false) Include one-line descriptions from
+      #     @option options [Boolean, Integer, nil] :log (nil) Include one-line descriptions from
       #       the actual commits being merged in log message (`--log`)
       #
       #       Pass an integer for `--log=<n>`.
       #
-      #     @option options [Boolean] :no_log (false) Disable inclusion of one-line descriptions
+      #     @option options [Boolean, nil] :no_log (nil) Disable inclusion of one-line descriptions
       #       from merged commits (`--no-log`)
       #
-      #     @option options [Boolean] :signoff (false) Add a `Signed-off-by` trailer to the
+      #     @option options [Boolean, nil] :signoff (nil) Add a `Signed-off-by` trailer to the
       #       resulting merge commit message (`--signoff`)
       #
-      #     @option options [Boolean] :no_signoff (false) Remove a `Signed-off-by` trailer from
+      #     @option options [Boolean, nil] :no_signoff (nil) Remove a `Signed-off-by` trailer from
       #       the merge commit message (`--no-signoff`)
       #
-      #     @option options [Boolean] :stat (false) Show a diffstat at the end of the merge
+      #     @option options [Boolean, nil] :stat (nil) Show a diffstat at the end of the merge
       #
-      #     @option options [Boolean] :no_stat (false) Do not show a diffstat at the end of the merge
+      #     @option options [Boolean, nil] :no_stat (nil) Do not show a diffstat at the end of the merge
       #
       #       Alias: :n
       #
-      #     @option options [Boolean] :compact_summary (false) Show a compact summary after the merge
+      #     @option options [Boolean, nil] :compact_summary (nil) Show a compact summary after the merge
       #
-      #     @option options [Boolean] :squash (false) Squash pulled commits into a single commit
+      #     @option options [Boolean, nil] :squash (nil) Squash pulled commits into a single commit
       #       (`--squash`)
       #
-      #     @option options [Boolean] :no_squash (false) Override `--squash` option (`--no-squash`)
+      #     @option options [Boolean, nil] :no_squash (nil) Override `--squash` option (`--no-squash`)
       #
-      #     @option options [Boolean] :verify (false) Run pre-merge and commit-msg hooks
+      #     @option options [Boolean, nil] :verify (nil) Run pre-merge and commit-msg hooks
       #       (`--verify`)
       #
-      #     @option options [Boolean] :no_verify (false) Bypass pre-merge and commit-msg hooks
+      #     @option options [Boolean, nil] :no_verify (nil) Bypass pre-merge and commit-msg hooks
       #       (`--no-verify`)
       #
       #     @option options [String] :strategy (nil) Use the given merge strategy
@@ -227,45 +227,45 @@ module Git
       #       Can be a single value or array. For example, `'ours'`, `'theirs'`, `'patience'`.
       #       Alias: :X
       #
-      #     @option options [Boolean] :verify_signatures (false) Verify that the tip commit of
+      #     @option options [Boolean, nil] :verify_signatures (nil) Verify that the tip commit of
       #       the side branch being merged is signed with a valid key (`--verify-signatures`)
       #
-      #     @option options [Boolean] :no_verify_signatures (false) Do not verify the signature of
+      #     @option options [Boolean, nil] :no_verify_signatures (nil) Do not verify the signature of
       #       the side branch tip commit (`--no-verify-signatures`)
       #
-      #     @option options [Boolean] :summary (false) Show a summary after the merge (`--summary`)
+      #     @option options [Boolean, nil] :summary (nil) Show a summary after the merge (`--summary`)
       #
-      #     @option options [Boolean] :no_summary (false) Do not show a summary after the merge
+      #     @option options [Boolean, nil] :no_summary (nil) Do not show a summary after the merge
       #       (`--no-summary`)
       #
-      #     @option options [Boolean] :autostash (false) Automatically create a temporary stash entry
+      #     @option options [Boolean, nil] :autostash (nil) Automatically create a temporary stash entry
       #       before the operation begins (`--autostash`)
       #
-      #     @option options [Boolean] :no_autostash (false) Disable automatic stashing before the
+      #     @option options [Boolean, nil] :no_autostash (nil) Disable automatic stashing before the
       #       operation (`--no-autostash`)
       #
-      #     @option options [Boolean] :allow_unrelated_histories (false) Allow pulling from a
+      #     @option options [Boolean, nil] :allow_unrelated_histories (nil) Allow pulling from a
       #       repository that shares no common history with the current repository
       #
-      #     @option options [Boolean, String] :rebase (false) Rebase the current branch on
+      #     @option options [Boolean, String, nil] :rebase (nil) Rebase the current branch on
       #       top of the upstream branch after fetching (`--rebase`)
       #
       #       Pass a string such as `'merges'` or `'interactive'` for `--rebase=<value>`.
       #       Alias: :r
       #
-      #     @option options [Boolean] :no_rebase (false) Override earlier `--rebase` option
+      #     @option options [Boolean, nil] :no_rebase (nil) Override earlier `--rebase` option
       #       (`--no-rebase`)
       #
-      #     @option options [Boolean] :all (false) Fetch all remotes (`--all`)
+      #     @option options [Boolean, nil] :all (nil) Fetch all remotes (`--all`)
       #
-      #     @option options [Boolean] :no_all (false) Do not fetch all remotes (`--no-all`)
+      #     @option options [Boolean, nil] :no_all (nil) Do not fetch all remotes (`--no-all`)
       #
-      #     @option options [Boolean] :append (false) Append ref names and object names fetched to
+      #     @option options [Boolean, nil] :append (nil) Append ref names and object names fetched to
       #       the existing contents of `.git/FETCH_HEAD`
       #
       #       Alias: :a
       #
-      #     @option options [Boolean] :atomic (false) Use an atomic transaction to update local refs
+      #     @option options [Boolean, nil] :atomic (nil) Use an atomic transaction to update local refs
       #
       #     @option options [String] :depth (nil) Limit fetching to the given number of commits
       #
@@ -282,46 +282,46 @@ module Git
       #
       #       Repeatable.
       #
-      #     @option options [Boolean] :unshallow (false) Convert a shallow repository to a complete one
+      #     @option options [Boolean, nil] :unshallow (nil) Convert a shallow repository to a complete one
       #
       #       If the source is shallow, fetches as much as possible.
       #
-      #     @option options [Boolean] :update_shallow (false) Accept refs that update `.git/shallow`
+      #     @option options [Boolean, nil] :update_shallow (nil) Accept refs that update `.git/shallow`
       #
       #     @option options [String, Array<String>] :negotiation_tip (nil) Report only commits
       #       reachable from the given tips during negotiation
       #
       #       Repeatable.
       #
-      #     @option options [Boolean] :negotiate_only (false) Do not fetch; only print ancestries
+      #     @option options [Boolean, nil] :negotiate_only (nil) Do not fetch; only print ancestries
       #       between the local repository and the remote
       #
-      #     @option options [Boolean] :dry_run (false) Show what would be done without making changes
+      #     @option options [Boolean, nil] :dry_run (nil) Show what would be done without making changes
       #
-      #     @option options [Boolean] :porcelain (false) Give the output in a stable, easy-to-parse
+      #     @option options [Boolean, nil] :porcelain (nil) Give the output in a stable, easy-to-parse
       #       format for scripts
       #
-      #     @option options [Boolean] :force (false) Override the check for a non-fast-forward update
+      #     @option options [Boolean, nil] :force (nil) Override the check for a non-fast-forward update
       #
       #       Alias: :f
       #
-      #     @option options [Boolean] :keep (false) Keep the downloaded pack
+      #     @option options [Boolean, nil] :keep (nil) Keep the downloaded pack
       #
       #       Alias: :k
       #
-      #     @option options [Boolean] :prefetch (false) Modify the configured refspec to place
+      #     @option options [Boolean, nil] :prefetch (nil) Modify the configured refspec to place
       #       all refs into the `refs/prefetch/` namespace
       #
-      #     @option options [Boolean] :prune (false) Remove remote-tracking references that no longer
+      #     @option options [Boolean, nil] :prune (nil) Remove remote-tracking references that no longer
       #       exist on the remote before fetching
       #
       #       Alias: :p
       #
-      #     @option options [Boolean] :tags (false) Fetch all tags from the remote (`--tags`)
+      #     @option options [Boolean, nil] :tags (nil) Fetch all tags from the remote (`--tags`)
       #
       #       Alias: :t
       #
-      #     @option options [Boolean] :no_tags (false) Disable automatic tag following
+      #     @option options [Boolean, nil] :no_tags (nil) Disable automatic tag following
       #       (`--no-tags`)
       #
       #     @option options [String, Array<String>] :refmap (nil) Override fetch refspecs for
@@ -333,14 +333,14 @@ module Git
       #
       #       Alias: :j
       #
-      #     @option options [Boolean] :set_upstream (false) Add upstream (tracking) reference for
+      #     @option options [Boolean, nil] :set_upstream (nil) Add upstream (tracking) reference for
       #       the current branch
       #
       #     @option options [String] :upload_pack (nil) Path to `git-upload-pack` on the remote
       #
-      #     @option options [Boolean] :progress (false) Force progress status display (`--progress`)
+      #     @option options [Boolean, nil] :progress (nil) Force progress status display (`--progress`)
       #
-      #     @option options [Boolean] :no_progress (false) Suppress progress status display
+      #     @option options [Boolean, nil] :no_progress (nil) Suppress progress status display
       #       (`--no-progress`)
       #
       #     @option options [String, Array<String>] :server_option (nil) Transmit the given
@@ -348,17 +348,17 @@ module Git
       #
       #       Repeatable. Alias: :o
       #
-      #     @option options [Boolean] :show_forced_updates (false) Check whether a local branch is
+      #     @option options [Boolean, nil] :show_forced_updates (nil) Check whether a local branch is
       #       force-updated during fetch (`--show-forced-updates`)
       #
-      #     @option options [Boolean] :no_show_forced_updates (false) Disable checking for force
+      #     @option options [Boolean, nil] :no_show_forced_updates (nil) Disable checking for force
       #       updates (`--no-show-forced-updates`)
       #
-      #     @option options [Boolean] :ipv4 (false) Use IPv4 addresses only, ignoring IPv6 addresses
+      #     @option options [Boolean, nil] :ipv4 (nil) Use IPv4 addresses only, ignoring IPv6 addresses
       #
       #       Alias: :'4'
       #
-      #     @option options [Boolean] :ipv6 (false) Use IPv6 addresses only, ignoring IPv4 addresses
+      #     @option options [Boolean, nil] :ipv6 (nil) Use IPv6 addresses only, ignoring IPv4 addresses
       #
       #       Alias: :'6'
       #

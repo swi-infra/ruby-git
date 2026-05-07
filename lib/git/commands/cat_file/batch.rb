@@ -130,23 +130,23 @@ module Git
         #
         #   @param options [Hash] command options
         #
-        #   @option options [Boolean] :buffer (false) Use normal stdio buffering for better throughput
+        #   @option options [Boolean, nil] :buffer (nil) Use normal stdio buffering for better throughput
         #
-        #   @option options [Boolean] :follow_symlinks (false) Follow symlinks in trees
+        #   @option options [Boolean, nil] :follow_symlinks (nil) Follow symlinks in trees
         #
-        #   @option options [Boolean] :unordered (false) Output in arbitrary order
+        #   @option options [Boolean, nil] :unordered (nil) Output in arbitrary order
         #
-        #   @option options [Boolean] :textconv (false) Apply textconv filters
+        #   @option options [Boolean, nil] :textconv (nil) Apply textconv filters
         #
-        #   @option options [Boolean] :filters (false) Apply full working-tree filters
+        #   @option options [Boolean, nil] :filters (nil) Apply full working-tree filters
         #
-        #   @option options [Boolean] :use_mailmap (false) Remap identities via mailmap (`--use-mailmap`)
+        #   @option options [Boolean, nil] :use_mailmap (nil) Remap identities via mailmap (`--use-mailmap`)
         #
-        #   @option options [Boolean] :no_use_mailmap (false) Suppress mailmap remapping (`--no-use-mailmap`)
+        #   @option options [Boolean, nil] :no_use_mailmap (nil) Suppress mailmap remapping (`--no-use-mailmap`)
         #
         #   @option options [String] :filter (nil) Omit objects matching the given filter spec
         #
-        #   @option options [Boolean] :Z (false) Use NUL-delimited I/O
+        #   @option options [Boolean, nil] :Z (nil) Use NUL-delimited I/O
         #
         #   @option options [#write, nil] :out (nil) Stream stdout to this IO object
         #     instead of buffering in memory; when given, `result.stdout` will be `''`
@@ -171,24 +171,24 @@ module Git
         #
         #   @param options [Hash] command options
         #
-        #   @option options [Boolean] :buffer (false) Use normal stdio buffering for better
+        #   @option options [Boolean, nil] :buffer (nil) Use normal stdio buffering for better
         #     throughput when processing large numbers of objects
         #
-        #   @option options [Boolean] :follow_symlinks (false) Follow symlinks in trees
+        #   @option options [Boolean, nil] :follow_symlinks (nil) Follow symlinks in trees
         #
-        #   @option options [Boolean] :unordered (false) Output in arbitrary order
+        #   @option options [Boolean, nil] :unordered (nil) Output in arbitrary order
         #
-        #   @option options [Boolean] :textconv (false) Apply textconv filters
+        #   @option options [Boolean, nil] :textconv (nil) Apply textconv filters
         #
-        #   @option options [Boolean] :filters (false) Apply full working-tree filters
+        #   @option options [Boolean, nil] :filters (nil) Apply full working-tree filters
         #
-        #   @option options [Boolean] :use_mailmap (false) Remap identities via mailmap (`--use-mailmap`)
+        #   @option options [Boolean, nil] :use_mailmap (nil) Remap identities via mailmap (`--use-mailmap`)
         #
-        #   @option options [Boolean] :no_use_mailmap (false) Suppress mailmap remapping (`--no-use-mailmap`)
+        #   @option options [Boolean, nil] :no_use_mailmap (nil) Suppress mailmap remapping (`--no-use-mailmap`)
         #
         #   @option options [String] :filter (nil) Omit objects matching the given filter spec
         #
-        #   @option options [Boolean] :Z (false) Use NUL-delimited I/O
+        #   @option options [Boolean, nil] :Z (nil) Use NUL-delimited I/O
         #
         #   @option options [#write, nil] :out (nil) Stream stdout to this IO object
         #     instead of buffering in memory; when given, `result.stdout` will be `''`
@@ -216,19 +216,19 @@ module Git
         #
         #   @param options [Hash] command options
         #
-        #   @option options [Boolean] :buffer (false) Use normal stdio buffering for better throughput
+        #   @option options [Boolean, nil] :buffer (nil) Use normal stdio buffering for better throughput
         #
-        #   @option options [Boolean] :textconv (false) Apply textconv filters
+        #   @option options [Boolean, nil] :textconv (nil) Apply textconv filters
         #
-        #   @option options [Boolean] :filters (false) Apply full working-tree filters
+        #   @option options [Boolean, nil] :filters (nil) Apply full working-tree filters
         #
-        #   @option options [Boolean] :use_mailmap (false) Remap identities via mailmap (`--use-mailmap`)
+        #   @option options [Boolean, nil] :use_mailmap (nil) Remap identities via mailmap (`--use-mailmap`)
         #
-        #   @option options [Boolean] :no_use_mailmap (false) Suppress mailmap remapping (`--no-use-mailmap`)
+        #   @option options [Boolean, nil] :no_use_mailmap (nil) Suppress mailmap remapping (`--no-use-mailmap`)
         #
         #   @option options [String] :filter (nil) Omit objects matching the given filter spec
         #
-        #   @option options [Boolean] :Z (false) Use NUL-delimited I/O
+        #   @option options [Boolean, nil] :Z (nil) Use NUL-delimited I/O
         #
         #   @option options [#write, nil] :out (nil) Stream stdout to this IO object
         #     instead of buffering in memory; when given, `result.stdout` will be `''`
@@ -251,18 +251,18 @@ module Git
         #
         #   @param options [Hash] command options
         #
-        #   @option options [Boolean] :buffer (false) Use normal stdio buffering for better throughput
+        #   @option options [Boolean, nil] :buffer (nil) Use normal stdio buffering for better throughput
         #
-        #   @option options [Boolean] :unordered (false) Output in arbitrary order
+        #   @option options [Boolean, nil] :unordered (nil) Output in arbitrary order
         #
-        #   @option options [Boolean] :use_mailmap (false) Remap identities via mailmap for
+        #   @option options [Boolean, nil] :use_mailmap (nil) Remap identities via mailmap for
         #     commit and tag objects (`--use-mailmap`)
         #
-        #   @option options [Boolean] :no_use_mailmap (false) Suppress mailmap remapping (`--no-use-mailmap`)
+        #   @option options [Boolean, nil] :no_use_mailmap (nil) Suppress mailmap remapping (`--no-use-mailmap`)
         #
         #   @option options [String] :filter (nil) Omit objects matching the given filter spec
         #
-        #   @option options [Boolean] :Z (false) Use NUL-delimited I/O
+        #   @option options [Boolean, nil] :Z (nil) Use NUL-delimited I/O
         #
         #   @option options [#write, nil] :out (nil) Stream stdout to this IO object
         #     instead of buffering in memory; when given, `result.stdout` will be `''`
@@ -285,19 +285,19 @@ module Git
         #
         #   @param options [Hash] command options
         #
-        #   @option options [Boolean] :buffer (false) Use normal stdio buffering for better
+        #   @option options [Boolean, nil] :buffer (nil) Use normal stdio buffering for better
         #     throughput when processing large numbers of objects
         #
-        #   @option options [Boolean] :unordered (false) Output in arbitrary order
+        #   @option options [Boolean, nil] :unordered (nil) Output in arbitrary order
         #
-        #   @option options [Boolean] :use_mailmap (false) Remap identities via mailmap for
+        #   @option options [Boolean, nil] :use_mailmap (nil) Remap identities via mailmap for
         #     commit and tag objects (`--use-mailmap`)
         #
-        #   @option options [Boolean] :no_use_mailmap (false) Suppress mailmap remapping (`--no-use-mailmap`)
+        #   @option options [Boolean, nil] :no_use_mailmap (nil) Suppress mailmap remapping (`--no-use-mailmap`)
         #
         #   @option options [String] :filter (nil) Omit objects matching the given filter spec
         #
-        #   @option options [Boolean] :Z (false) Use NUL-delimited I/O
+        #   @option options [Boolean, nil] :Z (nil) Use NUL-delimited I/O
         #
         #   @option options [#write, nil] :out (nil) Stream stdout to this IO object
         #     instead of buffering in memory; when given, `result.stdout` will be `''`
