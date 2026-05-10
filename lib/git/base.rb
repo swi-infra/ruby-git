@@ -657,7 +657,7 @@ module Git
     #
     # @git.remove_remote('scott_git')
     def remove_remote(name)
-      lib.remote_remove(name)
+      facade_repository.remove_remote(name)
     end
 
     # returns an array of all Git::Tag objects for this repository
