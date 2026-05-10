@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'git/commands/fetch'
+require 'git/commands/remote/remove'
 require 'git/repository/shared_private'
 
 module Git
@@ -130,6 +131,25 @@ module Git
         positionals = [*([remote] if remote), *refspecs]
 
         Git::Commands::Fetch.new(@execution_context).call(*positionals, **opts, merge: true).stdout
+      end
+
+      # Removes a remote from this repository
+      #
+      # Deletes the remote named `name` along with its associated configuration,
+      # tracking references, and remote-tracking branches.
+      #
+      # @example Remove a remote named 'upstream'
+      #   repo.remove_remote('upstream')
+      #
+      # @param name [String] the name of the remote to remove
+      #
+      # @return [Git::CommandLineResult] the result of calling `git remote remove`
+      #
+      # @raise [Git::FailedError] when git exits with a non-zero status, for example
+      #   when `name` does not refer to an existing remote
+      #
+      def remove_remote(name)
+        Git::Commands::Remote::Remove.new(@execution_context).call(name)
       end
 
       # Helpers private to the `RemoteOperations` topic module
