@@ -61,4 +61,61 @@ RSpec.describe Git::Repository::RemoteOperations, :integration do
       end
     end
   end
+
+  # ---------------------------------------------------------------------------
+  # #push — basic invocations
+  # ---------------------------------------------------------------------------
+
+  describe '#push' do
+    # Set up a second bare remote with something to push to
+    let(:remote_dir) { Dir.mktmpdir('remote_repo') }
+
+    before do
+      Git.init(remote_dir, bare: true)
+      repo.add_remote('test-remote', remote_dir)
+    end
+
+    after do
+      FileUtils.rm_rf(remote_dir)
+    end
+
+    it 'returns a String' do
+      result = described_instance.push('origin', 'main')
+      expect(result).to be_a(String)
+    end
+
+    it 'succeeds when pushing to a valid remote' do
+      expect { described_instance.push('origin', 'main') }.not_to raise_error
+    end
+
+    it 'raises Git::FailedError when the remote does not exist' do
+      expect { described_instance.push('nonexistent-remote', 'main') }
+        .to raise_error(Git::FailedError)
+    end
+
+    context 'when branch is specified without a remote' do
+      it 'raises ArgumentError' do
+        expect { described_instance.push(nil, 'main') }
+          .to raise_error(ArgumentError, /remote is required/)
+      end
+    end
+
+    context 'with an unknown option key' do
+      it 'raises ArgumentError before calling git' do
+        expect { described_instance.push('origin', 'main', unknown_key: true) }
+          .to raise_error(ArgumentError, /unknown_key/)
+      end
+    end
+
+    context 'with tags: true' do
+      before do
+        repo.add_tag('v1.0')
+      end
+
+      it 'pushes refs and tags and returns a String' do
+        result = described_instance.push('origin', 'main', tags: true)
+        expect(result).to be_a(String)
+      end
+    end
+  end
 end
