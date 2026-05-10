@@ -562,7 +562,7 @@ module Git
     #   @raise [ArgumentError] if a branch is given without a remote
     #
     def push(*, **)
-      lib.push(*, **)
+      facade_repository.push(*, **)
     end
 
     # merges one or more branches into the current working branch
