@@ -9,6 +9,7 @@ require 'git/parsers/branch'
 require 'git/parsers/fsck'
 require 'git/parsers/stash'
 require 'git/parsers/tag'
+require 'git/repository'
 require 'git/url'
 require 'logger'
 require 'pathname'
@@ -648,29 +649,9 @@ module Git
     end
     private_constant :RawLogParser
 
-    # Allowed option keys for {#ls_tree}
-    LS_TREE_ALLOWED_OPTS = %i[recursive path].freeze
-
     def ls_tree(sha, opts = {})
-      assert_valid_opts(opts, LS_TREE_ALLOWED_OPTS)
-      r_value = opts[:recursive]
-      paths = Array(opts[:path]).compact
-      safe_options = {}
-      safe_options[:r] = r_value unless r_value.nil?
-      result = Git::Commands::LsTree.new(self).call(sha, *paths, **safe_options)
-      parse_ls_tree_output(result.stdout)
+      Git::Repository.new(execution_context: self).ls_tree(sha, opts)
     end
-
-    def parse_ls_tree_output(output)
-      data = { 'blob' => {}, 'tree' => {}, 'commit' => {} }
-      output.split("\n").each do |line|
-        (info, filenm) = split_status_line(line)
-        (mode, type, entry_sha) = info.split
-        data[type][filenm] = { mode: mode, sha: entry_sha }
-      end
-      data
-    end
-    private :parse_ls_tree_output
 
     # @return [String] the command output
     #
