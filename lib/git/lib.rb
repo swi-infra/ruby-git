@@ -649,6 +649,16 @@ module Git
     end
     private_constant :RawLogParser
 
+    # Lists the objects in a git tree
+    #
+    # @param sha [String] the tree-ish object to list
+    #
+    # @param opts [Hash] additional options
+    #
+    # @return [Hash<String, Hash<String, Hash>>] parsed ls-tree output
+    #
+    # @api private
+    #
     def ls_tree(sha, opts = {})
       Git::Repository.new(execution_context: self).ls_tree(sha, opts)
     end
