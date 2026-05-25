@@ -2,6 +2,7 @@
 
 require 'git/execution_context/repository'
 require 'git/repository/branching'
+require 'git/repository/configuring'
 require 'git/repository/committing'
 require 'git/repository/diffing'
 require 'git/repository/logging'
@@ -39,6 +40,7 @@ module Git
   #
   class Repository
     include Git::Repository::Branching
+    include Git::Repository::Configuring
     include Git::Repository::Committing
     include Git::Repository::Diffing
     include Git::Repository::Logging
