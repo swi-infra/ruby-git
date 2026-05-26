@@ -523,11 +523,7 @@ RSpec.describe Git::Repository::Branching do
 
       it 'does not call the command' do
         expect(delete_command).not_to receive(:call)
-        begin
-          result
-        rescue ArgumentError
-          # expected
-        end
+        expect { result }.to raise_error(ArgumentError, /Unknown options: bogus/)
       end
     end
   end

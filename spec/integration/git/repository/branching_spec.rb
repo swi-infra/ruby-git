@@ -222,7 +222,7 @@ RSpec.describe Git::Repository::Branching, :integration do
       repo.branch('branch-2').create
     end
 
-    context 'deleting a single merged branch' do
+    context 'when deleting a single merged branch' do
       it 'returns a String that names the deleted branch' do
         result = described_instance.branch_delete('to-delete')
         expect(result).to be_a(String)
@@ -230,7 +230,7 @@ RSpec.describe Git::Repository::Branching, :integration do
       end
     end
 
-    context 'deleting an unmerged branch (force: true is the default)' do
+    context 'when deleting an unmerged branch (force: true is the default)' do
       before do
         current = described_instance.current_branch
         repo.checkout('to-delete')
@@ -254,7 +254,7 @@ RSpec.describe Git::Repository::Branching, :integration do
       end
     end
 
-    context 'deleting multiple branches at once' do
+    context 'when deleting multiple branches at once' do
       it 'deletes all named branches and returns a String' do
         result = described_instance.branch_delete('branch-1', 'branch-2')
         expect(result).to be_a(String)
