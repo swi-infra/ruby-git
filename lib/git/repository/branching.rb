@@ -12,7 +12,7 @@ require 'git/repository/shared_private'
 module Git
   class Repository
     # Facade methods for branching operations: checking out, switching branches,
-    # and querying the current branch
+    # querying the current branch, and deleting branches
     #
     # Included by {Git::Repository}.
     #
@@ -250,19 +250,23 @@ module Git
       #   @param options [Hash] options for the delete command
       #
       #   @option options [Boolean, nil] :force (true) allow deleting the branch
-      #     irrespective of its merged status. Defaults to `true` to match the
-      #     4.x behavior of {Git::Lib#branch_delete}.
+      #     irrespective of its merged status
+      #
+      #     Defaults to `true` to match the 4.x behavior.
       #
       #   @option options [Boolean, nil] :remotes (nil) delete remote-tracking
-      #     branches. Use together with a `remote/branch` name.
+      #     branches
+      #
+      #     Use together with a `remote/branch` name.
       #
       #   @return [String] the stdout output from the delete command, e.g.
       #     `"Deleted branch feature (was abc1234)."`
       #
-      #   @raise [ArgumentError] when unsupported options are provided
+      # @raise [ArgumentError] if unsupported options are provided
       #
-      #   @raise [Git::Error] when git exits with a non-zero exit status (e.g.
-      #     when one or more branch names are not found)
+      # @raise [Git::FailedError] if git exits outside the allowed range (exit code > 1)
+      #
+      # @raise [Git::Error] if git exits with a non-zero exit status
       #
       def branch_delete(*branches, **options)
         options = { force: true }.merge(options)
