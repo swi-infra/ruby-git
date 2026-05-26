@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'pathname'
+require 'git/commands/branch/delete'
 require 'git/commands/branch/list'
 require 'git/commands/branch/show_current'
 require 'git/commands/checkout/branch'
@@ -220,6 +221,58 @@ module Git
       #
       def branch?(branch)
         local_branch?(branch) || remote_branch?(branch)
+      end
+
+      # Option keys accepted by {#branch_delete}
+      #
+      # Derived from the options accepted by {Git::Commands::Branch::Delete}.
+      BRANCH_DELETE_ALLOWED_OPTS = %i[force remotes].freeze
+      private_constant :BRANCH_DELETE_ALLOWED_OPTS
+
+      # Delete one or more local or remote-tracking branches
+      #
+      # @overload branch_delete(*branches, **options)
+      #
+      #   @example Delete a single branch
+      #     repo.branch_delete('feature') # => "Deleted branch feature (was abc1234)."
+      #
+      #   @example Delete multiple branches at once
+      #     repo.branch_delete('feature-1', 'feature-2')
+      #
+      #   @example Force-delete an unmerged branch
+      #     repo.branch_delete('unmerged-branch', force: true)
+      #
+      #   @example Delete a remote-tracking branch
+      #     repo.branch_delete('origin/feature', remotes: true)
+      #
+      #   @param branches [Array<String>] the name(s) of the branch(es) to delete
+      #
+      #   @param options [Hash] options for the delete command
+      #
+      #   @option options [Boolean, nil] :force (true) allow deleting the branch
+      #     irrespective of its merged status. Defaults to `true` to match the
+      #     4.x behavior of {Git::Lib#branch_delete}.
+      #
+      #   @option options [Boolean, nil] :remotes (nil) delete remote-tracking
+      #     branches. Use together with a `remote/branch` name.
+      #
+      #   @return [String] the stdout output from the delete command, e.g.
+      #     `"Deleted branch feature (was abc1234)."`
+      #
+      #   @raise [ArgumentError] when unsupported options are provided
+      #
+      #   @raise [Git::Error] when git exits with a non-zero exit status (e.g.
+      #     when one or more branch names are not found)
+      #
+      def branch_delete(*branches, **options)
+        options = { force: true }.merge(options)
+        SharedPrivate.assert_valid_opts!(BRANCH_DELETE_ALLOWED_OPTS, **options)
+
+        result = Git::Commands::Branch::Delete.new(@execution_context).call(*branches, **options)
+
+        raise Git::Error, result.stderr.strip unless result.status.success?
+
+        result.stdout.strip
       end
 
       # Private helpers local to {Git::Repository::Branching}
