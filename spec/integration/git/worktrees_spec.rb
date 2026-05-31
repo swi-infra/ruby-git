@@ -63,7 +63,11 @@ RSpec.describe Git::Worktrees, :integration do
       end
 
       after do
-        repo.worktree(linked_path).remove rescue nil
+        begin
+          repo.worktree(linked_path).remove
+        rescue StandardError
+          nil
+        end
         repo.worktrees.prune
       end
 
