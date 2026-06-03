@@ -1,6 +1,14 @@
 # frozen_string_literal: true
 
+require 'active_support'
+require 'active_support/deprecation'
+
 module Git
+  # @api private
+  # Defined here so git/errors.rb is self-contained when required without git.rb.
+  # git.rb also sets Git::Deprecation; the ||= is a no-op when that happens first.
+  Deprecation ||= ActiveSupport::Deprecation.new('5.0.0', 'Git')
+
   # rubocop:disable Layout/LineLength
 
   # Base class for all custom git module errors
