@@ -433,4 +433,13 @@ RSpec.describe Git::Base do
       expect(described_instance.ls_remote).to eq(result_hash)
     end
   end
+
+  describe '#stash_list' do
+    include_context 'with a stubbed facade_repository'
+
+    it 'delegates to facade_repository.stash_list' do
+      expect(facade_repository).to receive(:stash_list).and_return('stash@{0}: WIP')
+      expect(described_instance.stash_list).to eq('stash@{0}: WIP')
+    end
+  end
 end
