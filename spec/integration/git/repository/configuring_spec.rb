@@ -45,4 +45,27 @@ RSpec.describe Git::Repository::Configuring, :integration do
       end
     end
   end
+
+  describe '#global_config' do
+    context 'when called with no arguments' do
+      it 'returns a Hash' do
+        result = described_instance.global_config
+        expect(result).to be_a(Hash)
+      end
+
+      it 'returns a Hash with string keys and string values' do
+        result = described_instance.global_config
+        expect(result.keys).to all(be_a(String))
+        expect(result.values).to all(be_a(String))
+      end
+    end
+
+    context 'when called with a name' do
+      it 'returns a non-empty String for user.name' do
+        result = described_instance.global_config('user.name')
+        expect(result).to be_a(String)
+        expect(result).not_to be_empty
+      end
+    end
+  end
 end
