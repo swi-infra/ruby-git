@@ -179,6 +179,24 @@ module Git
       #
       # @yieldreturn [void]
       #
+      # Return the paths of files with unresolved merge conflicts
+      #
+      # @example List conflicting files after a failed merge
+      #   paths = repo.unmerged
+      #   # => ["config/settings.rb", "lib/git/base.rb"]
+      #   paths.each { |path| puts "Conflict in #{path}" }
+      #
+      # @return [Array<String>] repository-relative paths of files with unresolved
+      #   merge conflicts; empty array when the working tree has no conflicts
+      #
+      # @raise [Git::FailedError] if git exits with a non-zero exit status
+      #
+      # @see #each_conflict
+      #
+      def unmerged
+        Private.unmerged_paths(@execution_context)
+      end
+
       def each_conflict
         Private.unmerged_paths(@execution_context).each do |file_path|
           Private.write_staged_file(@execution_context, file_path, 2) do |your_file|

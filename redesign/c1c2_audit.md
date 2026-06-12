@@ -410,7 +410,7 @@ These require a new facade method before a base.rb delegator can be added.
 | `mv(source, destination, options = {})` | Wraps `git mv`. Externally useful. | ⬜ promote — new facade in `Git::Repository::Staging`; `Git::Commands::Mv` ✅ exists; trivial effort |
 | `parse_config(file)` | Parses a config file from path. | 🔍 human decision — expose or fold into `config()` with `:file` option? |
 | `stash_list` | Returns a formatted string `"stash@{0}: ...\n..."` — distinct from `stashes_all` which returns structured data. | 🔍 human decision — promote for backward compat, or deprecate in favor of `stashes_all`? |
-| `unmerged` | Returns paths with unresolved merge conflicts. Already partially covered by `each_conflict` (yields paths to temporary files for staged content). Pure path list is useful. | 🔍 human decision — promote `unmerged` as a simpler alternative to `each_conflict`? |
+| `unmerged` | Returns paths with unresolved merge conflicts. Already partially covered by `each_conflict` (yields paths to temporary files for staged content). Pure path list is useful. | ✅ promoted — public method in `Git::Repository::Merging` + `Git::Base` delegator added (PR 5h-6) |
 | `current_branch_state` | Returns a `HeadState` value object with `:state` (`:active`/`:unborn`/`:detached`) and `:name`. Richer than `current_branch`. Legacy `Git::Lib` implementation used a mutable `Struct`; promoted facade uses an immutable `Data` object. | ✅ promoted — `HeadState` Data object defined in `Git::Repository::Branching`; facade in `Git::Repository::Branching` + `Git::Base` delegator added (PR 5g) |
 
 ### 7.4 Internal Plumbing — Mark as ❌ Remove
@@ -438,10 +438,10 @@ upgrade notes as "unsupported; remove any `g.lib.X` calls."
 
 | Status | Count |
 |--------|-------|
-| ✅ promote (repo already had it, `Git::Base` delegator added — PR 2d; or alias added) | 24 |
+| ✅ promote (repo already had it, `Git::Base` delegator added — PR 2d; or alias added) | 25 |
 | ⬜ promote (new facade work required) | 1 |
 | ❌ remove (internal plumbing) | 12 |
-| 🔍 human decision | 16 |
+| 🔍 human decision | 15 |
 | **Total orphaned methods** | **56** |
 
 > **Recommendation:** The 24 "trivial wiring" promotions can be handled in PR 5a
