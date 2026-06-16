@@ -38,9 +38,11 @@ require 'git/encoding_utils'
 require 'git/errors'
 require 'git/escaped_path'
 require 'git/execution_context'
+require 'git/commands/ls_remote'
 require 'git/file_ref'
 require 'git/fsck_object'
 require 'git/fsck_result'
+require 'git/parsers/ls_remote'
 require 'git/version_constraint'
 require 'git/lib'
 require 'git/log'
@@ -424,7 +426,11 @@ module Git
   # @param [String|NilClass] location the target repository location or nil for '.'
   # @return [{String=>Hash}] the available references of the target repo.
   def self.ls_remote(location = nil, options = {})
-    Git::Lib.new.ls_remote(location, options)
+    options = options.dup
+    context = Git::ExecutionContext::Global.new(logger: options.delete(:log))
+    repository = location || '.'
+    output_lines = Git::Commands::LsRemote.new(context).call(repository, **options).stdout.split("\n")
+    Git::Parsers::LsRemote.parse_output(output_lines)
   end
 
   # Open a an existing Git working directory
