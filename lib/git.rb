@@ -436,7 +436,7 @@ module Git
   # options
   #   :refs
   #
-  # @param location [String|NilClass] the target repository location or nil for '.'
+  # @param location [String, nil] the target repository location or nil for '.'
   # @return [{String=>Hash}] the available references of the target repo.
   def self.ls_remote(location = nil, options = {})
     options = options.dup
