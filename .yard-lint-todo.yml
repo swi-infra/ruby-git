@@ -21,7 +21,6 @@ Documentation/UndocumentedMethodArguments:
     - 'lib/git/parsers/stash.rb'
     - 'lib/git/parsers/tag.rb'
     - 'lib/git/remote.rb'
-    - 'lib/git/repository.rb'
     - 'lib/git/repository/context_helpers.rb'
     - 'lib/git/repository/logging.rb'
     - 'lib/git/repository/object_operations.rb'
@@ -38,7 +37,6 @@ Documentation/UndocumentedObjects:
     - 'lib/git/parsers/stash.rb'
     - 'lib/git/parsers/tag.rb'
     - 'lib/git/remote.rb'
-    - 'lib/git/repository.rb'
     - 'lib/git/repository/context_helpers.rb'
     - 'lib/git/repository/logging.rb'
     - 'lib/git/repository/object_operations.rb'
@@ -169,7 +167,6 @@ Documentation/UndocumentedOptions:
     - 'lib/git/commands/worktree/unlock.rb'
     - 'lib/git/commands/write_tree.rb'
     - 'lib/git/remote.rb'
-    - 'lib/git/repository.rb'
     - 'lib/git/repository/branching.rb'
     - 'lib/git/repository/committing.rb'
     - 'lib/git/repository/context_helpers.rb'
@@ -185,7 +182,6 @@ Documentation/UndocumentedOptions:
 Tags/OptionTags:
   Exclude:
     - 'lib/git/remote.rb'
-    - 'lib/git/repository.rb'
     - 'lib/git/repository/branching.rb'
     - 'lib/git/repository/committing.rb'
     - 'lib/git/repository/diffing.rb'
