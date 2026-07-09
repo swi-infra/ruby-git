@@ -14,23 +14,23 @@ module Git
     # The four public factories — {clone}, {init}, {open}, {bare} — mirror the
     # top-level `Git.*` entry points and return a {Git::Repository}.
     #
-    # Extended by {Git::Repository}.
+    # Extended by the {Git} module.
     #
-    # @api public
+    # @api private
     #
     module Factories # rubocop:disable Metrics/ModuleLength
       # Clone a repository into a new directory
       #
       # @example Clone into the default directory
-      #   repository = Git::Repository.clone('https://github.com/ruby-git/ruby-git.git')
+      #   repository = Git.clone('https://github.com/ruby-git/ruby-git.git')
       #
       # @example Clone into a specific directory
       #   repo_url = 'https://github.com/ruby-git/ruby-git.git'
-      #   repository = Git::Repository.clone(repo_url, 'local')
+      #   repository = Git.clone(repo_url, 'local')
       #
       # @example Clone a bare repository
       #   repo_url = 'https://github.com/ruby-git/ruby-git.git'
-      #   repository = Git::Repository.clone(repo_url, nil, bare: true)
+      #   repository = Git.clone(repo_url, nil, bare: true)
       #
       # @param repository_url [String] the URL or path of the repository to clone
       #
@@ -187,13 +187,13 @@ module Git
       # Create an empty Git repository or reinitialize an existing one
       #
       # @example Initialize in the current directory
-      #   repository = Git::Repository.init
+      #   repository = Git.init
       #
       # @example Initialize in a specific directory
-      #   repository = Git::Repository.init('/path/to/project')
+      #   repository = Git.init('/path/to/project')
       #
       # @example Initialize a bare repository
-      #   repository = Git::Repository.init('/path/to/project.git', bare: true)
+      #   repository = Git.init('/path/to/project.git', bare: true)
       #
       # @param directory [String] the directory to initialize; defaults to `'.'`
       #
@@ -250,7 +250,7 @@ module Git
       # Open a working copy at an existing path
       #
       # @example Open the working copy in the current directory
-      #   repository = Git::Repository.open('.')
+      #   repository = Git.open('.')
       #
       # @param working_dir [String] the path to the root of the working copy
       #
@@ -286,7 +286,7 @@ module Git
       #   a git working tree
       #
       # @note This method opens working copies only. To open a bare repository, use
-      #   `Git::Repository.bare`.
+      #   `Git.bare`.
       #
       # @api public
       #
@@ -307,7 +307,7 @@ module Git
       # Open an existing bare repository at `git_dir`
       #
       # @example Open a bare repository
-      #   repository = Git::Repository.bare('/path/to/repo.git')
+      #   repository = Git.bare('/path/to/repo.git')
       #
       # @param git_dir [String] the path to the bare repository directory
       #
@@ -500,7 +500,7 @@ module Git
       # @api private
       #
       def from_paths(options, paths)
-        new(execution_context: Git::ExecutionContext::Repository.from_hash(
+        Git::Repository.new(execution_context: Git::ExecutionContext::Repository.from_hash(
           options.merge(paths), logger: options[:log]
         ))
       end
@@ -751,7 +751,7 @@ module Git
         return unless opts.key?(:path)
 
         if defined?(Git::Deprecation)
-          Git::Deprecation.warn('The :path option for Git::Repository.clone is deprecated, use :chdir instead')
+          Git::Deprecation.warn('The :path option for Git.clone is deprecated, use :chdir instead')
         end
         path = opts.delete(:path)
         opts[:chdir] ||= path
@@ -776,7 +776,7 @@ module Git
 
         if defined?(Git::Deprecation)
           Git::Deprecation.warn(
-            'The :recursive option for Git::Repository.clone is deprecated, use :recurse_submodules instead'
+            'The :recursive option for Git.clone is deprecated, use :recurse_submodules instead'
           )
         end
         opts[:recurse_submodules] = opts.delete(:recursive)
@@ -799,7 +799,7 @@ module Git
         return unless opts.key?(:remote)
 
         if defined?(Git::Deprecation)
-          Git::Deprecation.warn('The :remote option for Git::Repository.clone is deprecated, use :origin instead')
+          Git::Deprecation.warn('The :remote option for Git.clone is deprecated, use :origin instead')
         end
         opts[:origin] = opts.delete(:remote)
       end
