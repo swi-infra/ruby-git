@@ -9,10 +9,16 @@
 > the C1b documentation-coverage work and the C1d coverage-gate work are already
 > done (see Done-When). `UPGRADING.md` also already exists.
 >
+> **C1a is ✅ complete.** The public API scope TSV has been produced at
+> `redesign/c1a-public-api-scope.tsv` (255 rows: 56 public, 199 internal).
+> 24 internal constants still need `@api private` flipped in C1c.
+>
 > Remaining work:
 >
-> - **C1c:** finish the `@api`-visibility decisions (e.g., the `Git::Repository::*`
->   topic modules are still `@api public`; decide/flip per plan)
+> - **C1c:** flip `@api` tags for the 24 internal constants identified in
+>   `c1a-public-api-scope.tsv` that still have `api_private_current=no`
+>   (includes all `Git::Repository::*` topic modules, `Git::CommandLine::*`,
+>   `Git::Configuring`, `Git::EscapedPath`, `Git::Object::AbstractObject`)
 > - **C2:** confirm `README.md` reflects the new entry points and links to the
 >   migration guide, and review `UPGRADING.md`
 > - **C3:** run the full final documentation verification before v5.0.0 release.
