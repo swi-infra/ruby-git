@@ -4,8 +4,10 @@ require 'spec_helper'
 
 RSpec.describe Git::Branches do
   def make_branch_info(refname:, current: false)
+    short_name = refname.sub(%r{\Arefs/heads/}, '').sub(%r{\A(?:refs/)?remotes/[^/]+/}, '')
     Git::BranchInfo.new(
       refname: refname,
+      short_name: short_name,
       target_oid: nil,
       current: current,
       worktree: false,

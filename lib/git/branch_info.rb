@@ -9,14 +9,15 @@ module Git
   #
   # @example Parse branch refnames
   #   'main' => { remote_name: nil, branch_name: 'main' }
+  #   'refs/heads/main' => { remote_name: nil, branch_name: 'main' }
   #   'remotes/origin/main' => { remote_name: 'origin', branch_name: 'main' }
+  #   'refs/remotes/origin/main' => { remote_name: 'origin', branch_name: 'main' }
   #   'feature/foo' => { remote_name: nil, branch_name: 'feature/foo' }
   #   'remotes/origin/feature/bar' => { remote_name: 'origin', branch_name: 'feature/bar' }
   #
-  # @note This regex is similar to Git::Branch::BRANCH_NAME_REGEXP but uses \A/\z anchors
-  #   instead of ^/$ for stricter matching. As part of the architectural redesign,
-  #   Git::Branch will eventually be refactored to use BranchInfo internally, at which
-  #   point this will become the single source of truth for branch name parsing.
+  # @note This regex handles both raw full refs (e.g., `refs/heads/main`) as stored in
+  #   {Git::BranchInfo#refname} and normalized short-form refs (e.g., `main`,
+  #   `remotes/origin/main`) used elsewhere.
   #
   # @note This regex assumes remote names do not contain '/'. If a remote name
   #   contains '/', parsing will be incorrect. For example, 'remotes/team/upstream/main'
@@ -26,10 +27,11 @@ module Git
   #
   # @api private
   BRANCH_REFNAME_REGEXP = %r{
-    \A                              # start of string
-    (?:(?:refs/)?remotes/(?<remote_name>[^/]+)/)? # optional 'refs?/remotes/<remote_name>/'
-    (?<branch_name>.+)                   # branch name (everything else)
-    \z                              # end of string
+    \A                                            # start of string
+    (?:refs/heads/)?                              # optional refs/heads/ prefix (stripped)
+    (?:(?:refs/)?remotes/(?<remote_name>[^/]+)/)? # optional refs?/remotes/<remote_name>/
+    (?<branch_name>.+)                            # branch name (everything else)
+    \z                                            # end of string
   }x
 
   # Value object representing branch metadata from git branch output
@@ -65,23 +67,15 @@ module Git
   #   info.short_name   #=> 'main'
   #
   # @example Local branch with upstream tracking
-  #   upstream_info = Git::BranchInfo.new(
-  #     refname: 'remotes/origin/main',
-  #     target_oid: 'abc123def456789012345678901234567890abcd',
-  #     current: false,
-  #     worktree: false,
-  #     symref: nil,
-  #     upstream: nil
-  #   )
   #   info = Git::BranchInfo.new(
-  #     refname: 'main',
+  #     refname: 'refs/heads/main',
   #     target_oid: 'abc123def456789012345678901234567890abcd',
   #     current: true,
   #     worktree: false,
   #     symref: nil,
-  #     upstream: upstream_info
+  #     upstream: 'refs/remotes/origin/main'
   #   )
-  #   info.upstream.remote_name  #=> 'origin'
+  #   info.upstream  #=> 'refs/remotes/origin/main'
   #
   # @see Git::Branch for the full-featured branch object with operations
   #
@@ -121,16 +115,26 @@ module Git
   #
   # @!attribute [r] upstream
   #
-  #   The configured upstream/tracking branch
+  #   The configured upstream/tracking branch refname as reported by git
   #
-  #   @return [Git::BranchInfo, nil] the upstream branch info, or nil if no upstream is configured
+  #   @return [String, nil] the raw upstream refname from `%(upstream)`
+  #     (e.g., `'refs/remotes/origin/main'`), or nil if no upstream is configured
   #
-  #   @note Remote-tracking branches (e.g., 'origin/main') have upstream: nil
+  #   @note Remote-tracking branches (e.g., `'refs/remotes/origin/main'`) have upstream: nil
   #
-  #   @note When upstream exists but the remote-tracking branch hasn't been fetched,
-  #     the upstream's target_oid may be nil
+  #   @note This is the raw refname snapshot from when the branch list was read.
+  #     It does not reflect live git state after the snapshot was taken.
   #
-  BranchInfo = Data.define(:refname, :target_oid, :current, :worktree, :symref, :upstream) do
+  # @!attribute [r] short_name
+  #
+  #   The short branch name without any remote or heads prefix
+  #
+  #   @return [String] the branch name (e.g., `'main'` or `'feature/foo'`)
+  #
+  #   @note Computed from `%(refname:short)` by the parser; computed from `refname`
+  #     via {BRANCH_REFNAME_REGEXP} when not provided to the constructor.
+  #
+  BranchInfo = Data.define(:refname, :target_oid, :current, :worktree, :symref, :upstream, :short_name) do
     # @return [Boolean] always false for BranchInfo (see DetachedHeadInfo for detached state)
     def detached? = false
 
@@ -151,28 +155,10 @@ module Git
 
     # @return [String, nil] the name of the remote (e.g., 'origin'), or nil for local branches
     def remote_name
-      parse_refname[:remote_name]
-    end
-
-    # @return [String] the branch name without remote prefix (e.g., 'main' or 'feature/foo')
-    def short_name
-      parse_refname[:branch_name]
+      refname.match(Git::BRANCH_REFNAME_REGEXP)[:remote_name]
     end
 
     # @return [String] string representation (the full refname)
     def to_s = refname
-
-    private
-
-    # Parse the refname and return match data
-    #
-    # The regex is guaranteed to match any non-empty string due to the `.+` pattern,
-    # so we don't need nil checking. If refname is empty/nil, this would fail at
-    # object creation time since refname is a required attribute.
-    #
-    # @return [MatchData] the match result
-    def parse_refname
-      refname.match(Git::BRANCH_REFNAME_REGEXP)
-    end
   end
 end

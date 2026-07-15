@@ -65,22 +65,25 @@ module Git
     #
     attr_accessor :name
 
-    # The upstream tracking branch info, or `nil` if none is configured
+    # The upstream tracking refname, or `nil` if none is configured
     #
-    # Returns the {Git::BranchInfo} object for the configured upstream branch.
-    # Only populated when this branch was initialized from a full {Git::BranchInfo}
-    # (e.g. via {Git::Repository#branches} or {Git::Repository#branch}).
+    # Returns the normalized upstream refname for the configured upstream branch,
+    # derived from the raw value stored in the underlying {Git::BranchInfo}.
+    # Only populated when this branch was obtained via {Git::Repository#branches}.
     #
-    # @example Get the upstream remote name
-    #   git.branch('foo').upstream&.remote_name  #=> 'origin'
+    # @example Get the upstream refname
+    #   git.branches['foo'].upstream  #=> 'remotes/origin/bar'
     #
-    # @example Get the upstream branch short name
-    #   git.branch('foo').upstream&.short_name   #=> 'bar'
+    # @return [String, nil] the normalized upstream refname (e.g. `'remotes/origin/bar'`),
+    #   or `nil` if no upstream is configured or unavailable
     #
-    # @return [Git::BranchInfo, nil] the upstream branch info, or `nil` if no
-    #   upstream is configured or unavailable
-    #
-    attr_reader :upstream
+    def upstream
+      return nil if @upstream_raw.nil? || @upstream_raw.empty?
+
+      @upstream_raw
+        .sub(%r{\Arefs/heads/}, '')
+        .sub(%r{\Arefs/remotes/}, 'remotes/')
+    end
 
     # Initialize a new Branch object
     #
@@ -398,25 +401,6 @@ module Git
       @full
     end
 
-    # Returns the {Git::Remote} for the configured upstream, or `nil`
-    #
-    # A convenience wrapper around {#upstream} for the common case where the
-    # caller only needs the remote object rather than the full upstream
-    # {Git::BranchInfo}.
-    #
-    # @example Get the upstream remote
-    #   git.branch('foo').upstream_remote  #=> #<Git::Remote 'origin'>
-    #
-    # @return [Git::Remote, nil] the remote associated with the upstream branch,
-    #   or `nil` if no upstream is configured or the upstream is not a
-    #   remote-tracking branch
-    #
-    def upstream_remote
-      return nil unless @upstream&.remote_name
-
-      Git::Remote.new(@base, @upstream.remote_name)
-    end
-
     # Regular expression for parsing branch refnames
     #
     # Matches full and short refnames, capturing an optional remote name and the
@@ -460,10 +444,10 @@ module Git
     # @return [nil]
     #
     def initialize_from_branch_info(branch_info)
-      @full = branch_info.refname
       @name = branch_info.short_name
       @remote = branch_info.remote_name ? Git::Remote.new(@base, branch_info.remote_name) : nil
-      @upstream = branch_info.upstream
+      @full = @remote ? "remotes/#{@remote.name}/#{@name}" : @name
+      @upstream_raw = branch_info.upstream
     end
 
     # Initialize from a string name (legacy path for backward compatibility)
@@ -475,7 +459,7 @@ module Git
     def initialize_from_name(name)
       @full = name
       @remote, @name = parse_name(name)
-      @upstream = nil
+      @upstream_raw = nil
     end
 
     # Parses a full branch name into remote and short branch name components

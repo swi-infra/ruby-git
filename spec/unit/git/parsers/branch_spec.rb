@@ -6,7 +6,7 @@ require 'git/parsers/branch'
 RSpec.describe Git::Parsers::Branch do
   describe '.parse_list' do
     it 'parses a single local branch' do
-      stdout = "main|abc123def456789012345678901234567890abcdef|*||||\n"
+      stdout = "main\0abc123def456789012345678901234567890abcdef\0*\0\0\0\0main\n"
       result = described_class.parse_list(stdout)
 
       expect(result.size).to eq(1)
@@ -18,34 +18,33 @@ RSpec.describe Git::Parsers::Branch do
 
     it 'parses multiple branches' do
       stdout = <<~OUTPUT
-        refs/heads/main|abc123|*|||refs/remotes/origin/main
-        refs/heads/feature|def456||||
+        refs/heads/main\0abc123\0*\0\0\0refs/remotes/origin/main\0main
+        refs/heads/feature\0def456\0\0\0\0\0feature
       OUTPUT
       result = described_class.parse_list(stdout)
 
       expect(result.size).to eq(2)
-      expect(result[0].refname).to eq('main')
+      expect(result[0].refname).to eq('refs/heads/main')
       expect(result[0].current?).to be true
-      expect(result[0].upstream).not_to be_nil
-      expect(result[0].upstream.refname).to eq('remotes/origin/main')
-      expect(result[1].refname).to eq('feature')
+      expect(result[0].upstream).to eq('refs/remotes/origin/main')
+      expect(result[1].refname).to eq('refs/heads/feature')
       expect(result[1].current?).to be false
     end
 
     it 'parses remote-tracking branches' do
-      stdout = "refs/remotes/origin/main|abc123||||\n"
+      stdout = "refs/remotes/origin/main\0abc123\0\0\0\0\0origin/main\n"
       result = described_class.parse_list(stdout)
 
       expect(result.size).to eq(1)
-      expect(result[0].refname).to eq('remotes/origin/main')
+      expect(result[0].refname).to eq('refs/remotes/origin/main')
       expect(result[0].remote?).to be true
       expect(result[0].remote_name).to eq('origin')
     end
 
     it 'skips detached HEAD entries' do
       stdout = <<~OUTPUT
-        (HEAD detached at abc123)|abc123||||
-        main|def456||||
+        (HEAD detached at abc123)\0abc123\0\0\0\0
+        main\0def456\0\0\0\0\0main
       OUTPUT
       result = described_class.parse_list(stdout)
 
@@ -55,8 +54,8 @@ RSpec.describe Git::Parsers::Branch do
 
     it 'skips non-branch entries' do
       stdout = <<~OUTPUT
-        (not a branch)|||||
-        main|abc123||||
+        (not a branch)\0\0\0\0\0
+        main\0abc123\0\0\0\0\0main
       OUTPUT
       result = described_class.parse_list(stdout)
 
@@ -71,14 +70,14 @@ RSpec.describe Git::Parsers::Branch do
     end
 
     it 'parses branch checked out in another worktree' do
-      stdout = "refs/heads/feature|abc123||/path/to/worktree||\n"
+      stdout = "refs/heads/feature\0abc123\0\0/path/to/worktree\0\0\0feature\n"
       result = described_class.parse_list(stdout)
 
       expect(result[0].worktree?).to be true
     end
 
     it 'does not mark current branch as worktree even with worktree path' do
-      stdout = "refs/heads/main|abc123|*|/path/to/main||\n"
+      stdout = "refs/heads/main\0abc123\0*\0/path/to/main\0\0\0main\n"
       result = described_class.parse_list(stdout)
 
       expect(result[0].current?).to be true
@@ -86,7 +85,7 @@ RSpec.describe Git::Parsers::Branch do
     end
 
     it 'parses symbolic reference' do
-      stdout = "refs/heads/HEAD|abc123|||refs/heads/main|\n"
+      stdout = "refs/heads/HEAD\0abc123\0\0\0refs/heads/main\0\0HEAD\n"
       result = described_class.parse_list(stdout)
 
       expect(result[0].symref?).to be true
@@ -96,21 +95,21 @@ RSpec.describe Git::Parsers::Branch do
 
   describe '.parse_branch_line' do
     it 'returns nil for detached HEAD' do
-      line = '(HEAD detached at abc123)|abc123||||'
+      line = "(HEAD detached at abc123)\0abc123\0\0\0\0"
       result = described_class.parse_branch_line(line)
 
       expect(result).to be_nil
     end
 
     it 'returns nil for (not a branch) entries' do
-      line = '(not a branch)|||||'
+      line = "(not a branch)\0\0\0\0\0"
       result = described_class.parse_branch_line(line)
 
       expect(result).to be_nil
     end
 
     it 'parses a valid branch line' do
-      line = 'main|abc123|*|||'
+      line = "main\0abc123\0*\0\0\0\0main"
       result = described_class.parse_branch_line(line)
 
       expect(result).to be_a(Git::BranchInfo)
@@ -123,17 +122,17 @@ RSpec.describe Git::Parsers::Branch do
       fields = ['refs/heads/main', 'abc123', '*', '', '', 'refs/remotes/origin/main']
       result = described_class.build_branch_info(fields)
 
-      expect(result.refname).to eq('main')
+      expect(result.refname).to eq('refs/heads/main')
       expect(result.target_oid).to eq('abc123')
       expect(result.current?).to be true
-      expect(result.upstream.refname).to eq('remotes/origin/main')
+      expect(result.upstream).to eq('refs/remotes/origin/main')
     end
 
     it 'handles nil/empty optional fields' do
       fields = ['refs/heads/feature', '', '', '', '', '']
       result = described_class.build_branch_info(fields)
 
-      expect(result.refname).to eq('feature')
+      expect(result.refname).to eq('refs/heads/feature')
       expect(result.target_oid).to be_nil
       expect(result.current?).to be false
       expect(result.symref).to be_nil
@@ -191,13 +190,8 @@ RSpec.describe Git::Parsers::Branch do
   end
 
   describe '.build_upstream_info' do
-    it 'builds BranchInfo for valid upstream ref' do
-      result = described_class.build_upstream_info('refs/remotes/origin/main')
-
-      expect(result).to be_a(Git::BranchInfo)
-      expect(result.refname).to eq('remotes/origin/main')
-      expect(result.target_oid).to be_nil
-      expect(result.current?).to be false
+    it 'returns the raw upstream refname string for a valid upstream ref' do
+      expect(described_class.build_upstream_info('refs/remotes/origin/main')).to eq('refs/remotes/origin/main')
     end
 
     it 'returns nil for empty upstream ref' do
@@ -326,7 +320,7 @@ RSpec.describe Git::Parsers::Branch do
         current: false,
         worktree: false,
         symref: nil,
-        upstream: nil
+        upstream: nil, short_name: 'feature'
       )
     end
 

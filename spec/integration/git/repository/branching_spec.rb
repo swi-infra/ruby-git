@@ -283,8 +283,8 @@ RSpec.describe Git::Repository::Branching, :integration do
 
       it 'includes the current branch' do
         current = described_instance.current_branch
-        refnames = described_instance.branches_all.map(&:refname)
-        expect(refnames).to include(current)
+        short_names = described_instance.branches_all.map(&:short_name)
+        expect(short_names).to include(current)
       end
 
       it 'marks exactly one branch as current' do
@@ -313,9 +313,9 @@ RSpec.describe Git::Repository::Branching, :integration do
       end
 
       it 'includes both local and remote-tracking branches' do
-        refnames = described_instance.branches_all.map(&:refname)
-        expect(refnames).to include('main')
-        expect(refnames.any? { |r| r.start_with?('remotes/origin/') }).to be(true)
+        branches = described_instance.branches_all
+        expect(branches.map(&:short_name)).to include('main')
+        expect(branches.any?(&:remote?)).to be(true)
       end
     end
 
@@ -331,30 +331,15 @@ RSpec.describe Git::Repository::Branching, :integration do
         expect(result).to all(be_a(Git::BranchInfo))
       end
     end
-  end
 
-  # ---------------------------------------------------------------------------
-  # #update_ref
-  # ---------------------------------------------------------------------------
-
-  # ---------------------------------------------------------------------------
-  # #branch (factory)
-  # ---------------------------------------------------------------------------
-
-  describe '#branch' do
-    context 'when the local branch has an upstream tracking branch on a remote' do
+    context 'when a local branch has a configured upstream (issue #1270)' do
       let(:bare_dir) { Dir.mktmpdir('bare_repo') }
-      let(:branch) { described_instance.branch('foo') }
 
       after { FileUtils.rm_rf(bare_dir) }
 
-      # Reproduces the user scenario from issue #1270:
-      # local branch 'foo' tracking remote 'origin' branch 'bar'
-      # (deliberately different names to verify upstream.short_name)
       before do
         Git.init(bare_dir, bare: true)
         repo.remote_add('origin', bare_dir)
-        # Create foo, push it to origin as 'bar', then configure tracking
         repo.branch('foo').create
         repo.checkout('foo')
         repo.push('origin', 'foo:bar')
@@ -362,41 +347,21 @@ RSpec.describe Git::Repository::Branching, :integration do
         repo.config_set('branch.foo.merge', 'refs/heads/bar')
       end
 
-      it 'returns a Branch whose upstream is the upstream BranchInfo' do
-        expect(branch.upstream).to be_a(Git::BranchInfo)
-      end
-
-      it 'returns a Branch whose upstream remote_name is origin' do
-        expect(branch.upstream.remote_name).to eq('origin')
-      end
-
-      it 'returns a Branch whose upstream short_name is the remote branch name' do
-        expect(branch.upstream.short_name).to eq('bar')
-      end
-
-      it 'returns a Branch whose upstream_remote is a Git::Remote for origin' do
-        expect(branch.upstream_remote).to be_a(Git::Remote)
-        expect(branch.upstream_remote.name).to eq('origin')
+      it 'returns a BranchInfo whose upstream is the raw upstream refname string' do
+        foo = described_instance.branches_all.find { |b| b.short_name == 'foo' }
+        expect(foo.upstream).to eq('refs/remotes/origin/bar')
       end
     end
-
-    context 'when the local branch has no upstream' do
-      it 'returns a Branch with nil upstream' do
-        branch = described_instance.branch('main')
-        expect(branch.upstream).to be_nil
-      end
-
-      it 'returns a Branch with nil upstream_remote' do
-        branch = described_instance.branch('main')
-        expect(branch.upstream_remote).to be_nil
-      end
-    end
-
-    # The bare BranchInfo fallback for non-existent branch names (the ||=
-    # assignment in Branching#branch) is pure-Ruby logic covered by unit
-    # tests. branches_all is still called first and runs git, but the
-    # fallback path itself adds no new git behavior worth integration-testing.
   end
+
+  # ---------------------------------------------------------------------------
+  # #update_ref
+  # ---------------------------------------------------------------------------
+
+  # ---------------------------------------------------------------------------
+  # #branch (factory): upstream data is not populated by git.branch(name) —
+  # use git.branches_all to obtain BranchInfo with upstream tracking data.
+  # ---------------------------------------------------------------------------
 
   #
   # current_branch_state calls both ShowCurrent and RevParse, so integration

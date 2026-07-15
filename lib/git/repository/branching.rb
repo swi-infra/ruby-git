@@ -583,13 +583,7 @@ module Git
       # @raise [Git::FailedError] if git exits with a non-zero exit status
       #
       def branch(branch_name = current_branch)
-        short_name = branch_name.match(Git::BRANCH_REFNAME_REGEXP)[:branch_name]
-        branch_info = branches_all(pattern: [short_name]).find { |b| b.refname == branch_name }
-        branch_info ||= Git::BranchInfo.new(
-          refname: branch_name, target_oid: nil, current: false,
-          worktree: false, symref: nil, upstream: nil
-        )
-        Git::Branch.new(self, branch_info)
+        Git::Branch.new(self, branch_name)
       end
 
       # Returns a {Git::Branches} collection of all branches in the repository
