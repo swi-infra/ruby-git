@@ -40,6 +40,7 @@
     - [What to know about Conventional Commits](#what-to-know-about-conventional-commits)
     - [Issue and PR references](#issue-and-pr-references)
   - [Testing guidelines](#testing-guidelines)
+    - [Test coverage policy](#test-coverage-policy)
     - [Unit tests vs Integration tests](#unit-tests-vs-integration-tests)
 - [Building a specific version of the Git command-line](#building-a-specific-version-of-the-git-command-line)
   - [Install pre-requisites](#install-pre-requisites)
@@ -939,6 +940,67 @@ This project uses **RSpec** (`spec/`) as its sole test framework. Structure,
 naming, setup, stubbing, and coverage rules for unit specs are defined in the
 [`rspec-unit-testing-standards`](.github/skills/rspec-unit-testing-standards/SKILL.md)
 skill — follow it when writing or reviewing specs under `spec/unit/`.
+
+#### Test coverage policy
+
+**Every pull request to `main` must keep `bundle exec rake spec:unit` at 100% line
+coverage and 100% branch coverage of `lib/`.** CI fails the build when it drops
+below either threshold.
+
+This is enforceable without being onerous because unit coverage in this project is
+deterministic: `lib/` has no Ruby-version, Ruby-engine, or platform conditionals, and
+no unit spec is conditionally skipped. Every supported MRI runtime measures exactly
+the same lines and branches, so a coverage failure is always something the pull
+request introduced.
+
+What the policy does and does not cover:
+
+- **Scope is the unit suite on MRI.** Integration specs are deliberately not
+  exhaustive and are not measured (`rake spec:integration` always disables coverage).
+  JRuby and TruffleRuby do not produce reliable coverage data and are not measured.
+- **Enforcement applies to full-suite runs.** A focused run
+  (`SPEC=<glob> bundle exec rake spec:unit`, or `bundle exec rspec <file>`) still
+  reports coverage but will not fail on it, so the usual edit-test loop is unaffected.
+  Set `FAIL_ON_LOW_COVERAGE=true` to force enforcement on for a focused run.
+- **The thresholds do not move.** Do not lower `minimum_coverage` and do not add a
+  SimpleCov filter to exclude a file. The only sanctioned escape hatch is `# :nocov:`.
+- **Every file under `lib/` is measured.** SimpleCov only tracks files loaded after it
+  starts, so a file loaded earlier is silently absent from the report rather than
+  counted as uncovered. This is why `git.gemspec` reads the version string out of
+  `lib/git/version.rb` instead of `require`ing it: the `Gemfile` uses `gemspec`, so
+  requiring it there would load it on every `bundle exec`, before SimpleCov starts.
+  Keep new code out of the load path that runs ahead of `spec_helper`.
+
+When a branch is hard to cover, apply these in order:
+
+1. **Reach it through the public interface.** If a branch is reachable, test it.
+2. **Delete it.** A branch that cannot be reached through the public interface is
+   usually dead code, and removing it is preferable to excluding it. See commit
+   `74e919a4` ("fix: remove unreachable nil check in `Git::Parsers::Grep.parse`") for
+   the pattern.
+3. **Exclude it with `# :nocov:`.** Reserved for defensive guards that could only be
+   reached by breaking an OS-level invariant. Wrap the smallest possible span, add a
+   comment explaining why the code is unreachable, and expect a reviewer to question
+   it. `lib/` currently contains no `# :nocov:` markers.
+
+**Coverage is a floor on evidence, not a proof of correctness.** A test written only
+to execute a line, without asserting a meaningful outcome, violates Rule 24 of the
+[`rspec-unit-testing-standards`](.github/skills/rspec-unit-testing-standards/SKILL.md)
+skill and will be rejected in review even though it turns the report green. The
+threshold exists to surface untested behavior, not to be satisfied.
+
+To see exactly what is uncovered:
+
+```bash
+# Names every uncovered line and branch (printed automatically when a full run fails)
+$ LIST_UNCOVERED_DETAIL=true bundle exec rake spec:unit
+
+# Browsable HTML report, also uploaded as a CI artifact when a build fails
+$ open coverage/index.html
+```
+
+This policy applies to `main` only. The `4.x` maintenance branch predates it and is
+not held to these thresholds.
 
 #### Unit tests vs Integration tests
 
