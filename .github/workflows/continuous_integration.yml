@@ -50,6 +50,52 @@ jobs:
         run: bundle exec rake rubocop yard
         timeout-minutes: 15
 
+  # Documentation links are the one part of this repository that nothing else checks.
+  # RuboCop reads Ruby, YARD reads doc comments, and the specs read code -- so a
+  # relative path into a file that has since moved, or an anchor into a heading that
+  # has since been reworded, stays green forever. That is not hypothetical: an audit
+  # in August 2026 found stale document paths and a mis-slugged anchor that had
+  # survived in the tree unnoticed, which is why this job exists.
+  #
+  # It runs separately from the lint job above rather than as another step in it,
+  # because it needs no Ruby and no bundle: a broken link should report as a broken
+  # link, not as a failure of the job that gates RuboCop.
+  #
+  # The checker is configured in .lychee.toml, including why external URLs are not
+  # requested. Run the same check locally with:
+  #
+  #     lychee --config .lychee.toml .
+  #
+  links:
+    name: Markdown Links
+
+    # Skip this job if triggered by a release PR
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && !startsWith(github.event.pull_request.head.ref, 'release-please--'))
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      # lycheeVersion is set explicitly even though the action already defaults to
+      # this exact version, because that default lives in the action and `@v2` is a
+      # moving tag: a new v2.x release bumps the lychee it installs, here, without a
+      # commit in this repository. That matters more than it usually would, because
+      # .lychee.toml is version-coupled -- `include_fragments` took a bare boolean
+      # before 0.24 and takes an enum string from 0.24 on -- so an unattended bump can
+      # fail this job on a config file nobody touched. Pinning turns that into a
+      # deliberate edit. v0.24.2 is the current stable release; the only newer tag
+      # upstream is `nightly`.
+      - name: Check Markdown Links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          lycheeVersion: v0.24.2
+          args: --config .lychee.toml .
+          fail: true
+
   build:
     name: Ruby ${{ matrix.ruby }} on ${{ matrix.operating-system }}
 
