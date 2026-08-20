@@ -412,11 +412,13 @@ adds no behavior and conflicts with the `@!method` directive.
    (`required:`, `type:`, `allow_nil:`, etc.) and operand format validation belong
    in `arguments do`. Cross-argument constraint methods are generally **not** declared;
    git validates its own option semantics. The narrow exception is **arguments git
-   cannot observe in its argv**: if an argument is `skip_cli: true` and never
-   reaches git's argv, git cannot detect incompatibilities — use `conflicts` and/or
-   `requires_one_of` in the DSL (e.g., `cat-file --batch` uses both because
-   `:objects` is `skip_cli: true`). Do not raise `ArgumentError` manually for things
-   the DSL can express via a constraint declaration.
+   cannot observe in its argv** — `skip_cli: true` operands, `execution_option`
+   entries, anything consumed entirely on the Ruby side. Git cannot detect
+   incompatibilities it never sees, so use `conflicts` and/or `requires_one_of` in
+   the DSL (e.g., `cat-file --batch` uses both because `:object` is
+   `skip_cli: true`). Do not raise `ArgumentError` manually for things the DSL can
+   express via a constraint declaration. See
+   [Project Context — Validation Boundaries](../project-context/SKILL.md#validation-boundaries).
 2. **stdin feeding** — batch protocols (`--batch`, `--batch-check`) via
    `Base#with_stdin`
 3. **Non-trivial option routing** — build different argument sets based on
@@ -469,7 +471,7 @@ an explicit override.
 #   @raise [Git::FailedError] if git exits with a non-zero exit status
 def call(*objects, **options)
   bound = args_definition.bind(*objects, **options)
-  with_stdin(Array(bound.objects).map { |o| "#{o}\n" }.join) do |reader|
+  with_stdin(Array(bound.object).map { |o| "#{o}\n" }.join) do |reader|
     run_batch(bound, reader)
   end
 end
@@ -487,14 +489,20 @@ modeling that contract in the DSL:
 ```ruby
 arguments do
   literal 'cat-file'
-  literal '--batch-check'
+  flag_or_value_option :batch_check, inline: true
   flag_option :batch_all_objects
-  operand :objects, repeatable: true, skip_cli: true
+  operand :object, repeatable: true, skip_cli: true
 
-  conflicts :objects, :batch_all_objects
-  requires_one_of :objects, :batch_all_objects
+  conflicts :object, :batch_all_objects
+  requires_one_of :object, :batch_all_objects
 end
 ```
+
+Note that the batch mode is a `flag_or_value_option`, not `literal '--batch-check'`.
+`cat-file` supports `--batch`, `--batch-check`, and `--batch-command` on one class, so
+none of them selects the operation — see
+[Do NOT split by output format / output mode](#do-not-split-by-output-format--output-mode).
+This mirrors `Git::Commands::CatFile::Batch`.
 
 ### Action-option-with-optional-value commands
 
@@ -583,7 +591,7 @@ Example — batch stdin protocol (as used by `git cat-file --batch`):
 ```ruby
 def call(*, **)
   bound = args_definition.bind(*, **)
-  with_stdin(Array(bound.objects).map { |object| "#{object}\n" }.join) do |stdin_r|
+  with_stdin(Array(bound.object).map { |object| "#{object}\n" }.join) do |stdin_r|
     run_batch(bound, stdin_r)
   end
 end
@@ -659,33 +667,33 @@ the expected inline form (`--option=value`). Check every `value_option` and
 **Constraint declarations are generally not used in command classes.** Do not add
 `conflicts`, `requires`, `requires_one_of`, `requires_exactly_one_of`,
 `forbid_values`, or `allowed_values` declarations to command classes. Git is the
-single source of truth for its own option semantics. There are two narrow exceptions:
+single source of truth for its own option semantics. See
+[Project Context — Validation Boundaries](../project-context/SKILL.md#validation-boundaries)
+for the policy this follows. There are two narrow exceptions:
 
-1. **`skip_cli: true` arguments** — the argument never reaches git's argv, so git
-   cannot detect incompatibilities and constraint declarations are appropriate (see
-   the `cat-file --batch` example above: `:objects` is `skip_cli: true`, so git never
-   sees it and cannot detect the conflict or the absent-both case).
+1. **Arguments with no argv representation** — `skip_cli: true` operands,
+   `execution_option` entries, and anything else consumed entirely on the Ruby side.
+   Git never sees a token for it, so it cannot detect incompatibilities and
+   constraint declarations are appropriate. Two shapes in the tree: the
+   `cat-file --batch` example above, where `:object` is `skip_cli: true`; and
+   `Git::Commands::Archive`, which declares `conflicts :output, :out` because `:out`
+   is an `execution_option` naming a Ruby IO object.
 2. **Git-visible arguments that cause silent data loss** — if a combination of
    git-visible arguments causes git to silently discard data (no error, wrong
    result), a `conflicts` declaration MAY be added with: a code comment explaining
    why, a reference to the git version(s) where the behavior was verified, and a
    test. As of this writing, no such case has been identified.
-3. **Mode-scoped flags explicitly constrained by the git docs** — if the git
-   documentation explicitly states that a flag only applies to certain modes or
-   option combinations (e.g., `--allow-unknown-type` is documented as "Allow
-   `-s` or `-t` to query broken/corrupt objects of unknown type"), a
-   `requires_one_of :mode_a, :mode_b, when: :flag` declaration is appropriate. Add
-   a DSL comment noting the constraint and a unit test asserting the ArgumentError.
 
-   ```ruby
-   # Allow -t and -s to query broken or corrupt objects of unknown type;
-   # rejected by git in any other mode — enforced by constraint below
-   flag_option :allow_unknown_type
-   # ...
-   requires_one_of :t, :s, when: :allow_unknown_type
-   ```
+**One existing deviation, which is not a third exception.**
+`Git::Commands::CatFile::Raw` declares `requires_one_of :t, :s, when: :allow_unknown_type`
+(`lib/git/commands/cat_file/raw.rb:78`). `:allow_unknown_type` is an ordinary
+`flag_option`, so it does reach git's argv and git does reject it in any other mode —
+which is exactly the case the policy above says to delegate. It predates the policy.
 
-See `redesign/3_architecture_implementation.md` Insight 6 for the full policy.
+Do not use it as a template, and do not add mode-scoped constraints for
+git-visible flags on the strength of it. Whether it should be removed is a
+behavior question, not a documentation one: dropping it changes an `ArgumentError`
+into a `Git::FailedError` for callers who pass the invalid combination.
 
 This step is required. A command class that only exposes the options that happen to
 be used today in the `Git::Repository::*` facade is incomplete — callers of the future API should not need

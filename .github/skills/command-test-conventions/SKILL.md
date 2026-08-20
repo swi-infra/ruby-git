@@ -100,11 +100,12 @@ Unit tests verify CLI argument building and command-layer behavior for each comm
   do **not** declare cross-argument constraint methods (`conflicts`, `requires`,
   `requires_one_of`, `requires_exactly_one_of`, `forbid_values`, `allowed_values`,
   etc.) — git validates its own option semantics. The narrow exception is **arguments
-  git cannot observe in its argv**: if an argument is `skip_cli: true`, it never
-  reaches git's argv and git cannot detect incompatibilities — constraint
-  declarations are appropriate and the resulting `ArgumentError` should be tested.
-  See the validation delegation policy in `redesign/3_architecture_implementation.md`
-  Insight 6.
+  git cannot observe in its argv** — `skip_cli: true` operands, `execution_option`
+  entries, anything consumed entirely on the Ruby side. Git cannot detect
+  incompatibilities it never sees, so constraint declarations are appropriate there
+  and the resulting `ArgumentError` should be tested.
+  See [Project Context — Validation Boundaries](../project-context/SKILL.md#validation-boundaries)
+  for the full policy.
 
 #### Expectations for command invocation
 
@@ -160,12 +161,12 @@ it 'includes --batch-all-objects and writes nothing to stdin' do
   command.call(batch_all_objects: true)
 end
 
-# git-invisible argument exception: :objects is skip_cli: true, so git never sees
+# git-invisible argument exception: :object is skip_cli: true, so git never sees
 # it in argv and cannot detect these incompatibilities. Ruby must enforce them.
 # conflicts: can't pass objects AND bypass stdin; requires_one_of: must choose one.
 it 'raises when mutually exclusive DSL inputs are combined' do
   expect { command.call('HEAD', batch_all_objects: true) }
-    .to raise_error(ArgumentError, /cannot specify :objects and :batch_all_objects/)
+    .to raise_error(ArgumentError, /cannot specify :object and :batch_all_objects/)
 end
 ```
 
@@ -315,8 +316,10 @@ Unit tests are organized under `describe '#call'` with three sections:
    unsupported options and required arguments that raise `ArgumentError`.
    Cross-argument constraints for git-visible arguments are not tested because
    command classes do not declare them. The exception is constraints on `skip_cli:
-   true` arguments (e.g., `conflicts :objects, :batch_all_objects` and
-   `requires_one_of :objects, :batch_all_objects`), which should be tested.
+   true` operands and `execution_option` entries — arguments that never reach git's
+   argv (e.g., `conflicts :object, :batch_all_objects` and
+   `requires_one_of :object, :batch_all_objects` in `cat-file --batch`, or
+   `conflicts :output, :out` in `archive`), which should be tested.
 
 The exit code and input validation blocks are optional — include them only when the
 command has those behaviors. They always appear at the end of `#call`, in that order.
