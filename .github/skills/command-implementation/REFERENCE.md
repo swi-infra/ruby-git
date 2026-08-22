@@ -686,22 +686,30 @@ for the policy this follows. There are two narrow exceptions:
    `cat-file --batch` example above, where `:object` is `skip_cli: true`; and
    `Git::Commands::Archive`, which declares `conflicts :output, :out` because `:out`
    is an `execution_option` naming a Ruby IO object.
-2. **Git-visible arguments that cause silent data loss** — if a combination of
-   git-visible arguments causes git to silently discard data (no error, wrong
-   result), a `conflicts` declaration MAY be added with: a code comment explaining
-   why, a reference to the git version(s) where the behavior was verified, and a
-   test.
+2. **Git-visible arguments that git silently mishandles** — if a combination of
+   git-visible arguments makes git misbehave with no error — it discards data,
+   returns a wrong result, or accepts an argument and ignores it — a constraint
+   declaration MAY be added with: a code comment explaining why, a reference to the
+   git version(s) where the behavior was verified, and a test.
 
-**One existing deviation, which is not a third exception.**
-`Git::Commands::CatFile::Raw` declares `requires_one_of :t, :s, when: :allow_unknown_type`
-(`lib/git/commands/cat_file/raw.rb:78`). `:allow_unknown_type` is an ordinary
-`flag_option`, so it does reach git's argv and git does reject it in any other mode —
-which is exactly the case the policy above says to delegate. It predates the policy.
+**The worked example of exception 2 is `Git::Commands::CatFile::Raw`.** It declares
+`requires_one_of :t, :s, when: :allow_unknown_type`
+(`lib/git/commands/cat_file/raw.rb`). `:allow_unknown_type` is an ordinary
+`flag_option` that reaches git's argv, but git does not reject the invalid
+combinations — it accepts the flag and silently ignores it (verified on git 2.55.0):
 
-Do not use it as a template, and do not add mode-scoped constraints for
-git-visible flags on the strength of it. Whether it should be removed is a
-behavior question, not a documentation one: dropping it changes an `ArgumentError`
-into a `Git::FailedError` for callers who pass the invalid combination.
+| Invocation | What git does | Exit |
+| --- | --- | --- |
+| `--allow-unknown-type -t` / `-s` | honors the flag | 0 |
+| `--allow-unknown-type -p`, `-e`, or `<type> <object>` | ignores the flag | 0 |
+
+Delegating would give the caller no signal that the flag did nothing, so Ruby raises
+`ArgumentError` instead. The constraint carries the code comment and the spec the
+exception requires.
+
+This is not a license for mode-scoped constraints on git-visible flags in general:
+the exception applies only when git's silent mishandling has been verified, and the
+burden of proof (comment, version, test) comes with it.
 
 This step is required. A command class that only exposes the options that happen to
 be used today in the `Git::Repository::*` facade is incomplete — callers of the future API should not need

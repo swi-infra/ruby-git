@@ -764,16 +764,16 @@ the summary below must not drift from it. There are two narrow exceptions:
    declares `conflicts :object, :batch_all_objects` and `requires_one_of :object,
    :batch_all_objects` because `:object` is `skip_cli: true`; `archive` declares
    `conflicts :output, :out` because `:out` is an `execution_option`.
-2. **Git-visible arguments that cause silent data loss** — if a combination of
-   git-visible arguments causes git to silently discard data (no error, wrong
-   result), a `conflicts` declaration MAY be added with: a code comment explaining
-   why, a reference to the git version(s) where the behavior was verified, and a
-   test.
-
-**Known deviation — do not flag it as new.** `Git::Commands::CatFile::Raw` declares
-`requires_one_of :t, :s, when: :allow_unknown_type` on a git-visible `flag_option`
-(`lib/git/commands/cat_file/raw.rb:78`). It predates the policy and is documented as
-such; report it only if the review is specifically about removing it.
+2. **Git-visible arguments that git silently mishandles** — if a combination of
+   git-visible arguments makes git misbehave with no error — it discards data,
+   returns a wrong result, or accepts an argument and ignores it — a constraint
+   declaration MAY be added with: a code comment explaining why, a reference to the
+   git version(s) where the behavior was verified, and a test.
+   `Git::Commands::CatFile::Raw` declares
+   `requires_one_of :t, :s, when: :allow_unknown_type` under this exception (git
+   silently ignores `--allow-unknown-type` outside `-t`/`-s`); do not flag it.
+   A constraint claiming this exception without its code comment, verified git
+   version, and spec should be flagged.
 
 ## 7. Check class-level declarations
 

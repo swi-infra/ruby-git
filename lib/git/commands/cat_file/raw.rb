@@ -75,6 +75,10 @@ module Git
           # Object name: SHA, ref, `HEAD`, treeish path reference, etc.
           operand :object, required: true
 
+          # Constraint allowed under the silent-mishandling exception to the
+          # validation delegation policy: git does not reject --allow-unknown-type
+          # outside -t/-s -- it accepts the flag and silently ignores it (verified
+          # on git 2.55.0), so delegating would give the caller no signal.
           requires_one_of :t, :s, when: :allow_unknown_type
         end
 
