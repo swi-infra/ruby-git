@@ -18,6 +18,7 @@ to update your code when upgrading from the preceding major version.
     - [v4.x-style configuration methods](#v4x-style-configuration-methods)
     - [`Git` module mixin deprecations](#git-module-mixin-deprecations)
     - [`Git::Author` deprecated](#gitauthor-deprecated)
+    - [`Git::Repository#remotes` deprecated](#gitrepositoryremotes-deprecated)
 
 ## Upgrading to v5.x
 
@@ -241,7 +242,7 @@ shim cannot forward them). Update call sites directly:
 
 | v4.x call | Notes |
 |-----------|-------|
-| `g.lib.list_files(ref_dir)` | Walked `.git/refs/` directly. Use `g.branches`, `g.tags`, or `g.remotes` instead. |
+| `g.lib.list_files(ref_dir)` | Walked `.git/refs/` directly. Use `g.branches`, `g.tags`, or `g.remote_list` instead. |
 
 ##### Internal plumbing methods (no replacement)
 
@@ -383,5 +384,30 @@ Constructing `Git::Author` directly emits a deprecation warning naming
 |-----------------|-------------|
 | `Git::Author.new('Name <email> 1627849923 +0200')` | `Git::AuthorInfo.parse('Name <email> 1627849923 +0200')` |
 | `author.name = 'New Name'` | `author = author.with(name: 'New Name')` (returns a new object) |
+
+#### `Git::Repository#remotes` deprecated
+
+`Git::Repository#remotes` is deprecated in favor of `Git::Repository#remote_list`
+and is removed in v6.0.0. Calling `remotes` emits a deprecation warning; its
+return value is unchanged.
+
+> **Return type change:** `remotes` returns `Array<Git::Remote>` — mutable
+> objects with `name`, `url`, and `fetch_opts` accessors and `fetch`, `merge`,
+> `branch`, and `remove` operations. `remote_list` returns
+> `Array<Git::RemoteInfo>` — immutable value objects read from the repository's
+> git config, with fields such as `name`, `url`, `push_url`, `fetch`, and `push`.
+> Because a remote may carry more than one URL or refspec, `url`, `push_url`,
+> `fetch`, and `push` are always `Array<String>`. Operations that lived on
+> `Git::Remote` are called on the repository with the remote name instead.
+
+| Deprecated call (works in v5.x, removed in v6.0.0) | Replacement |
+|-----------------------------------------------------|-------------|
+| `g.remotes` | `g.remote_list` — returns `Array<Git::RemoteInfo>` |
+| `g.remotes.map(&:name)` | `g.remote_list.map(&:name)` or `g.remote_names` |
+| `g.remotes.map(&:url)` | `g.remote_list.map { \|r\| r.url.first }` — `url` is an `Array<String>` |
+| `g.remotes.each(&:fetch)` | `g.remote_names.each { \|name\| g.fetch(name) }` |
+| `remote.fetch` | `g.fetch(remote.name)` |
+| `remote.merge(branch)` | `g.merge("#{remote.name}/#{branch}")` |
+| `remote.remove` | `g.remote_remove(remote.name)` |
 
 ---

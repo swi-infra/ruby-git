@@ -1127,6 +1127,7 @@ RSpec.describe Git::Repository::RemoteOperations do
         .to receive(:new).with(execution_context).and_return(list_command)
       allow(list_command).to receive(:call).and_return(command_result("origin\nupstream\n"))
       allow(Git::Remote).to receive(:new) { |_base, name| instance_double(Git::Remote, name: name) }
+      allow(Git::Deprecation).to receive(:warn)
     end
 
     it 'emits a deprecation warning via Git::Deprecation.warn' do
