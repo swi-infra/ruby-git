@@ -108,7 +108,19 @@ module Git
     #
     # @return [Git::Stashes] the stash list
     #
+    # @deprecated Use {Git::Repository#stashes_all} instead. This method ignores
+    #   the branch receiver and returns every stash in the repository, so
+    #   `git.branch('feature').stashes` and `git.branch('main').stashes` return
+    #   the same entries.
+    #
+    # @see Git::Repository#stashes_all
+    #
     def stashes
+      Git::Deprecation.warn(
+        'Git::Branch#stashes is deprecated and will be removed in v6.0.0. ' \
+        'It ignores the branch and returns all repository stashes. ' \
+        'Use Git::Repository#stashes_all instead.'
+      )
       @stashes ||= Git::Stashes.new(branch_repository)
     end
 

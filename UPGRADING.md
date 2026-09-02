@@ -384,4 +384,21 @@ Constructing `Git::Author` directly emits a deprecation warning naming
 | `Git::Author.new('Name <email> 1627849923 +0200')` | `Git::AuthorInfo.parse('Name <email> 1627849923 +0200')` |
 | `author.name = 'New Name'` | `author = author.with(name: 'New Name')` (returns a new object) |
 
+#### `Git::Branch#stashes` deprecated
+
+`Git::Branch#stashes` ignores the branch it is called on and returns every stash
+in the repository, so `g.branch('feature').stashes` and `g.branch('main').stashes`
+return the same entries. Call `Git::Repository#stashes_all` instead; it is the
+query `Git::Branch#stashes` was already running.
+
+> **Return type change:** `Git::Branch#stashes` returns a `Git::Stashes`
+> collection of `Git::Stash` objects. `g.stashes_all` returns an array of
+> `[index, message]` pairs, oldest first. Code that read `stash.message` from
+> each entry should read the second element of each pair instead.
+
+| Deprecated call (works in v5.x, removed in v6.0.0) | Replacement |
+|-----------------------------------------------------|-------------|
+| `g.branch(name).stashes` | `g.stashes_all` — returns `[[index, message], ...]` |
+| `g.branch(name).stashes.each { \|s\| puts s.message }` | `g.stashes_all.each { \|_index, message\| puts message }` |
+
 ---
