@@ -1129,6 +1129,11 @@ RSpec.describe Git::Repository::RemoteOperations do
       allow(Git::Remote).to receive(:new) { |_base, name| instance_double(Git::Remote, name: name) }
     end
 
+    it 'emits a deprecation warning via Git::Deprecation.warn' do
+      expect(Git::Deprecation).to receive(:warn).with(a_string_including('Git::Repository#remotes'))
+      described_instance.remotes
+    end
+
     it 'delegates to Git::Commands::Remote::List.new with the execution_context' do
       expect(Git::Commands::Remote::List)
         .to receive(:new).with(execution_context).and_return(list_command)
