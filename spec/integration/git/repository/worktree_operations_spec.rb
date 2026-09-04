@@ -302,8 +302,11 @@ RSpec.describe Git::Repository::WorktreeOperations, :integration do
         expect(described_instance.worktree_list.map(&:path)).to include(File.realpath(moved_path))
       end
 
+      # With no paths, git repairs the link of the worktree at the current
+      # directory rather than the one named by --git-dir, so the example passes
+      # the moved path to keep the outcome independent of the test's cwd.
       it 'returns the output from git as a String' do
-        expect(described_instance.worktree_repair).to be_a(String)
+        expect(described_instance.worktree_repair(moved_path)).to be_a(String)
       end
     end
 
