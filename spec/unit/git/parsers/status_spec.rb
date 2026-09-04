@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
+require 'git/parsers/status'
 
 RSpec.describe Git::Parsers::Status do
   describe '.parse' do
@@ -30,6 +31,12 @@ RSpec.describe Git::Parsers::Status do
           sha_head: sha_a, sha_index: sha_a,
           original_path: nil, rename_score: nil, unmerged_stages: nil
         )
+      end
+
+      it 'returns an entry whose string members are frozen' do
+        expect(result.first.path).to be_frozen
+        expect(result.first.sha_index).to be_frozen
+        expect { result.first.path << 'x' }.to raise_error(FrozenError)
       end
     end
 
@@ -93,10 +100,11 @@ RSpec.describe Git::Parsers::Status do
         )
       end
 
-      it 'freezes the unmerged stage data' do
+      it 'freezes the unmerged stage data down to its mode and SHA strings' do
         stages = result.first.unmerged_stages
         expect(stages).to be_frozen
         expect(stages.values).to all(be_frozen)
+        expect(stages.values.flat_map(&:values)).to all(be_frozen)
       end
 
       it 'reports the entry as unmerged' do

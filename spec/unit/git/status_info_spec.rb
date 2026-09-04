@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
+require 'git/status_info'
 
 RSpec.describe Git::StatusInfo do
   # Build a Git::StatusFileInfo with the given status characters and defaults for

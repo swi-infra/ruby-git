@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
+require 'git/status_file_info'
 
 RSpec.describe Git::StatusFileInfo do
   let(:sha_head) { '1111111111111111111111111111111111111111' }
@@ -40,6 +41,40 @@ RSpec.describe Git::StatusFileInfo do
       expect { instance.path = 'other.rb' }.to raise_error(NoMethodError, /path=/)
     end
 
+    it 'stores frozen copies of the string members without freezing the strings given' do
+      path = +'lib/foo.rb'
+      instance = described_class.new(**default_attrs, path: path)
+      expect(instance.path).to eq(path)
+      expect(instance.path).to be_frozen
+      expect(path).not_to be_frozen
+    end
+
+    it 'rejects mutation of its string members' do
+      expect { instance.path << 'x' }.to raise_error(FrozenError)
+    end
+
+    context 'when unmerged_stages is given' do
+      let(:index_status) { 'U' }
+      let(:worktree_status) { 'U' }
+      let(:unmerged_stages) { { 1 => { mode: +'100644', sha: +sha_head } } }
+
+      it 'stores a deeply frozen copy of the stage data' do
+        stages = instance.unmerged_stages
+        expect(stages).to eq(unmerged_stages)
+        expect(stages).to be_frozen
+        expect(stages.values).to all(be_frozen)
+        expect(stages.values.flat_map(&:values)).to all(be_frozen)
+        expect { stages[1][:mode] << 'x' }.to raise_error(FrozenError)
+      end
+
+      it 'does not freeze the hash the caller passed in' do
+        instance
+        expect(unmerged_stages).not_to be_frozen
+        expect(unmerged_stages[1]).not_to be_frozen
+        expect(unmerged_stages[1][:mode]).not_to be_frozen
+      end
+    end
+
     it 'compares equal to another instance with the same values' do
       expect(instance).to eq(described_class.new(**default_attrs))
     end
@@ -64,6 +99,12 @@ RSpec.describe Git::StatusFileInfo do
 
       it { is_expected.to be(false) }
     end
+
+    context 'when only the index status is ?' do
+      let(:index_status) { '?' }
+
+      it { is_expected.to be(false) }
+    end
   end
 
   describe '#ignored?' do
@@ -79,6 +120,12 @@ RSpec.describe Git::StatusFileInfo do
     context 'when the entry is untracked' do
       let(:index_status) { '?' }
       let(:worktree_status) { '?' }
+
+      it { is_expected.to be(false) }
+    end
+
+    context 'when only the index status is !' do
+      let(:index_status) { '!' }
 
       it { is_expected.to be(false) }
     end
