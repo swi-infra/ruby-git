@@ -72,6 +72,26 @@ RSpec.describe Git::Repository::ContextHelpers do
       expect(result).to eq(42)
     end
 
+    context 'when the working directory cannot be entered' do
+      before do
+        allow(Dir).to receive(:chdir).with(work_dir).and_raise(Errno::ENOENT, work_dir)
+      end
+
+      it 'raises Git::Error with the system error as cause' do
+        expect { described_instance.chdir { nil } }
+          .to raise_error(Git::Error, /Failed to change directory.*No such file or directory/) do |error|
+            expect(error.cause).to be_a(Errno::ENOENT)
+          end
+      end
+    end
+
+    context 'when the block raises a SystemCallError' do
+      it 'lets the SystemCallError propagate unchanged' do
+        expect { described_instance.chdir { raise Errno::ENOENT, 'caller.txt' } }
+          .to raise_error(Errno::ENOENT, /caller\.txt/)
+      end
+    end
+
     context 'when the repository is bare (no working directory)' do
       let(:execution_context) do
         instance_double(
@@ -227,6 +247,26 @@ RSpec.describe Git::Repository::ContextHelpers do
   # ---------------------------------------------------------------------------
 
   describe '#with_temp_index' do
+    context 'when the temporary directory cannot be created' do
+      before do
+        allow(Dir).to receive(:mktmpdir).and_raise(Errno::EACCES, '/tmp')
+      end
+
+      it 'raises Git::Error with the system error as cause' do
+        expect { described_instance.with_temp_index { nil } }
+          .to raise_error(Git::Error, /Failed to create a temporary directory.*Permission denied/) do |error|
+            expect(error.cause).to be_a(Errno::EACCES)
+          end
+      end
+    end
+
+    context 'when the block raises a SystemCallError' do
+      it 'lets the SystemCallError propagate unchanged' do
+        expect { described_instance.with_temp_index { raise Errno::ENOENT, 'caller.txt' } }
+          .to raise_error(Errno::ENOENT, /caller\.txt/)
+      end
+    end
+
     it 'yields self' do
       expect { |b| described_instance.with_temp_index(&b) }.to yield_with_args(described_instance)
     end
@@ -401,6 +441,32 @@ RSpec.describe Git::Repository::ContextHelpers do
       expect(described_instance.execution_context).to be(original_ctx)
     end
 
+    context 'when the working directory cannot be entered' do
+      before do
+        allow(Dir).to receive(:chdir).with(expanded_work_dir).and_raise(Errno::ENOENT, expanded_work_dir)
+      end
+
+      it 'raises Git::Error with the system error as cause' do
+        expect { described_instance.with_working(real_work_dir) { nil } }
+          .to raise_error(Git::Error, /Failed to change directory.*No such file or directory/) do |error|
+            expect(error.cause).to be_a(Errno::ENOENT)
+          end
+      end
+
+      it 'restores the original execution context' do
+        original_ctx = described_instance.execution_context
+        expect { described_instance.with_working(real_work_dir) { nil } }.to raise_error(Git::Error)
+        expect(described_instance.execution_context).to be(original_ctx)
+      end
+    end
+
+    context 'when the block raises a SystemCallError' do
+      it 'lets the SystemCallError propagate unchanged' do
+        expect { described_instance.with_working(real_work_dir) { raise Errno::ENOENT, 'caller.txt' } }
+          .to raise_error(Errno::ENOENT, /caller\.txt/)
+      end
+    end
+
     it 'raises ArgumentError when work_dir does not exist' do
       expect do
         described_instance.with_working('/nonexistent/path/for/test')
@@ -415,6 +481,26 @@ RSpec.describe Git::Repository::ContextHelpers do
   describe '#with_temp_working' do
     before do
       allow(Dir).to receive(:chdir).and_yield
+    end
+
+    context 'when the temporary directory cannot be created' do
+      before do
+        allow(Dir).to receive(:mktmpdir).and_raise(Errno::EACCES, '/tmp')
+      end
+
+      it 'raises Git::Error with the system error as cause' do
+        expect { described_instance.with_temp_working { nil } }
+          .to raise_error(Git::Error, /Failed to create a temporary directory.*Permission denied/) do |error|
+            expect(error.cause).to be_a(Errno::EACCES)
+          end
+      end
+    end
+
+    context 'when the block raises a SystemCallError' do
+      it 'lets the SystemCallError propagate unchanged' do
+        expect { described_instance.with_temp_working { raise Errno::ENOENT, 'caller.txt' } }
+          .to raise_error(Errno::ENOENT, /caller\.txt/)
+      end
     end
 
     it 'yields self' do

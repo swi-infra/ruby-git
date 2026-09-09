@@ -7,6 +7,7 @@ require 'git/commands/merge_base'
 require 'git/commands/revert/start'
 require 'git/commands/show'
 require 'git/repository/shared_private'
+require 'git/system_call_guard'
 
 module Git
   class Repository
@@ -278,6 +279,9 @@ module Git
       # @raise [Git::FailedError] when `git diff --cached` exits outside the
       #   allowed range (exit code > 2)
       #
+      # @raise [Git::Error] when a temporary file for the staged content cannot
+      #   be created
+      #
       # @yield [file, your_version, their_version] passes conflict details for
       #   each unmerged file
       #
@@ -320,6 +324,9 @@ module Git
       #
       # @raise [Git::FailedError] when `git diff --cached` exits outside the
       #   allowed range (exit code > 2)
+      #
+      # @raise [Git::Error] when a temporary file for the staged content cannot
+      #   be created
       #
       # @yield [file, your_version, their_version] passes conflict details for
       #   each unmerged file
@@ -429,6 +436,8 @@ module Git
         #
         # @return [void]
         #
+        # @raise [Git::Error] if the temporary file cannot be created
+        #
         # @yield [f] yields the open Tempfile containing the staged content
         #
         # @yieldparam f [Tempfile] open IO object for the staged content
@@ -437,11 +446,13 @@ module Git
         #
         # @api private
         #
-        def write_staged_file(execution_context, file_path, stage)
-          Tempfile.create([STAGE_PREFIXES[stage], File.basename(file_path)]) do |f|
-            Git::Commands::Show.new(execution_context).call(":#{stage}:#{file_path}", out: f)
-            f.flush
-            yield f
+        def write_staged_file(execution_context, file_path, stage, &block)
+          Git::SystemCallGuard.call('Failed to create a temporary file') do |guard|
+            Tempfile.create([STAGE_PREFIXES[stage], File.basename(file_path)]) do |f|
+              Git::Commands::Show.new(execution_context).call(":#{stage}:#{file_path}", out: f)
+              f.flush
+              guard.unguarded { block.call(f) }
+            end
           end
         end
       end

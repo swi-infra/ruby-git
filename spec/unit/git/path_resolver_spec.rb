@@ -119,6 +119,22 @@ RSpec.describe Git::PathResolver do
       end
     end
 
+    context 'when the gitdir pointer file cannot be read' do
+      let(:pointer_file) { File.expand_path('/repo/.git') }
+      let(:args) { { working_directory: '/repo', repository: pointer_file } }
+
+      before do
+        allow(File).to receive(:file?).with(pointer_file).and_return(true)
+        allow(File).to receive(:read).with(pointer_file).and_raise(Errno::EACCES, pointer_file)
+      end
+
+      it 'raises Git::Error with the system error as cause' do
+        expect { paths }.to raise_error(Git::Error, /gitdir pointer file.*Permission denied/) do |error|
+          expect(error.cause).to be_a(Errno::EACCES)
+        end
+      end
+    end
+
     context 'when the repository path is a file without a gitdir pointer' do
       let(:tmp_dir) { Dir.mktmpdir }
       let(:plain_file) { File.join(tmp_dir, '.git') }
