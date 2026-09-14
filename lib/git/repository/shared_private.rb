@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'git/commands/rev_parse'
+
 module Git
   class Repository
     # Internal helpers shared by `Git::Repository::*` topic modules
@@ -112,6 +114,41 @@ module Git
                             'after switching branches; make a commit on it first'
         else head.name
         end
+      end
+
+      # Resolve a commit-ish to the full object id of the commit it names
+      #
+      # Used by facade methods that need one commit's id before running a
+      # command that takes the id as an operand. The revision is resolved with
+      # `git rev-parse --verify` and the result is then peeled with `^{commit}`
+      # in a second call, so an annotated tag yields the tagged commit and a
+      # revision whose parser consumes the rest of the string, such as
+      # `:/<text>`, still resolves. {Git::Repository#rev_parse} is not used
+      # because it runs `--revs-only`, which prints both ends of a range and
+      # exits zero instead of failing.
+      #
+      # @example With an annotated tag
+      #   SharedPrivate.resolve_commit_oid(execution_context, 'v1.0.0')
+      #   #=> "9b9b31e704c0b85ffdd8d2af2ded85170a5af87d"
+      #
+      # @example With a range
+      #   SharedPrivate.resolve_commit_oid(execution_context, 'main..topic')
+      #   #=> raises Git::FailedError
+      #
+      # @param execution_context [Git::ExecutionContext] the context to run git in
+      #
+      # @param commitish [String] any single revision that `git rev-parse`
+      #   resolves to a commit or to an object that peels to one
+      #
+      # @return [String] the full object id of the commit
+      #
+      # @raise [Git::FailedError] when `commitish` does not resolve to a single
+      #   revision or does not peel to a commit
+      #
+      def resolve_commit_oid(execution_context, commitish)
+        rev_parse = Git::Commands::RevParse.new(execution_context)
+        object_id = rev_parse.call(commitish, verify: true).stdout.strip
+        rev_parse.call("#{object_id}^{commit}", verify: true).stdout.strip
       end
     end
 

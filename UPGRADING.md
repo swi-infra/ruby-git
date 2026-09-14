@@ -490,6 +490,25 @@ return type: it returns `Array<Git::StashInfo>`, newest first, the same value as
 > return type. Search for `stash_list` before upgrading. Code that needs the
 > text builds it from the entries:
 > `g.stash_list.map { |s| "#{s.name}: #{s.message}" }.join("\n")`.
+>
+> **`stash_store` return value change.** In v5.x, `g.stash_store` returned the
+> top entry of the stash list after the store, so it returned `nil` when the
+> list was empty (for example, another process cleared it before the lookup)
+> and another process's entry when one had been pushed in between. It never
+> emitted a deprecation warning, since the method keeps its name. In v6.0.0 it
+> peels the given commit-ish to the commit's object id with `git rev-parse`,
+> stores that id, returns the entry whose object id equals it, and raises
+> `Git::UnexpectedResultError` when that entry is missing, so its return value
+> is always a `Git::StashInfo`. A commit-ish that does not resolve to a single
+> commit raises `Git::FailedError` before anything is stored, and a `nil`
+> commit raises `ArgumentError` from the facade. A commit that begins with `-`
+> also raises `Git::FailedError` now, from `git rev-parse`, where v5.x raised
+> `ArgumentError` before running git. Storing the peeled id also fixes
+> annotated tags: v5.x passed the tag name through, and `git stash store` wrote
+> the tag object to `refs/stash`. With a tag object at the top of the reflog,
+> `git stash list` shows no entries at all, including older ones, until
+> `git stash drop` removes it. Search for `stash_store` before upgrading and
+> remove any check for a `nil` result.
 
 Two differences from `stashes_all` and `Git::Stash` carry over from the v5.x
 entry and still apply when moving to `stash_list`:

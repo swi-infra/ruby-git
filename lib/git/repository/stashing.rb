@@ -420,7 +420,11 @@ module Git
 
       # Add a stash commit created by {#stash_create} to the stash list
       #
-      # The stash list is read after the store to return the new top entry.
+      # `commit` is resolved to the full object id of the commit with
+      # `git rev-parse` and that id is what is stored, so an annotated tag stores
+      # the tagged commit rather than the tag object (which `git stash store`
+      # accepts but `git stash list` cannot show). The stash list is read after
+      # the store and the entry whose object id equals that id is returned.
       #
       # @example Store a stash commit
       #   oid = repo.stash_create
@@ -428,7 +432,13 @@ module Git
       #   info.name    #=> "stash@{0}"
       #   info.message #=> "saved for later"
       #
-      # @param commit [String] the object id of the stash commit to store
+      # @example Store a stash commit named by a ref
+      #   repo.stash_store('refs/tmp/wip').oid #=> "9b9b31e704c0b85ffdd8d2af2ded85170a5af87d"
+      #
+      # @param commit [String] the stash commit to store, as any single
+      #   revision that `git rev-parse` resolves to the commit (full or
+      #   abbreviated object id, branch, tag, or other ref name, `:/<text>`,
+      #   etc.)
       #
       # @param opts [Hash] options for the store
       #
@@ -442,18 +452,35 @@ module Git
       #
       # @option opts [Boolean, nil] :q (nil) alias for `:quiet`
       #
-      # @return [Git::StashInfo] the stored entry, now at the top of the stash list
+      # @return [Git::StashInfo] the stored entry
       #
-      # @raise [ArgumentError] if unsupported options are provided
+      # @raise [ArgumentError] if `commit` is `nil` or unsupported options are
+      #   provided
       #
-      # @raise [Git::FailedError] if git exits with a non-zero exit status
+      # @raise [Git::FailedError] if `commit` does not resolve to a single
+      #   commit, resolves to a commit that is not a stash commit, or git exits
+      #   with a non-zero exit status; the error from `git stash store` names
+      #   the resolved object id, not the revision as it was given
+      #
+      # @raise [Git::UnexpectedResultError] if the stash listing cannot be parsed
+      #   or does not contain the stored commit (for example, it was dropped by
+      #   another process before the lookup)
+      #
+      # @note Storing the commit that is already at the top of the stash list
+      #   adds no entry: `git stash store` writes nothing to the `refs/stash`
+      #   reflog, any `:message` given is discarded, and the existing top entry
+      #   is returned.
       #
       # @see https://git-scm.com/docs/git-stash git-stash documentation
       #
       def stash_store(commit, opts = {})
+        raise ArgumentError, 'commit is required' if commit.nil?
+
         SharedPrivate.assert_valid_opts!(STASH_STORE_ALLOWED_OPTS, **opts)
-        Git::Commands::Stash::Store.new(@execution_context).call(commit, **opts)
-        stash_list.first
+        oid = SharedPrivate.resolve_commit_oid(@execution_context, commit)
+        Git::Commands::Stash::Store.new(@execution_context).call(oid, **opts)
+        stash_list.find { |entry| entry.oid == oid } ||
+          raise(Git::UnexpectedResultError, "stash was stored but not found in the stash list: #{commit} (#{oid})")
       end
 
       # Remove all stash entries

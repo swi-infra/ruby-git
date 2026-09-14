@@ -654,23 +654,114 @@ RSpec.describe Git::Repository::Stashing do
   describe '#stash_store' do
     subject(:result) { described_instance.stash_store(commit, **options) }
 
-    let(:commit) { 'd' * 40 }
+    let(:oid) { 'd' * 40 }
+    let(:commit) { oid }
+    let(:resolved) { oid }
     let(:options) { {} }
+    let(:rev_parse_command) { instance_double(Git::Commands::RevParse) }
     let(:store_command) { instance_double(Git::Commands::Stash::Store) }
     let(:store_result) { command_result('') }
-    let(:stored_entry) { build_stash_info(index: 0, oid: commit, message: 'Created via "git stash store".') }
+    let(:stored_entry) { build_stash_info(index: 0, oid: oid, message: 'Created via "git stash store".') }
 
     before do
+      allow(Git::Commands::RevParse).to receive(:new).with(execution_context).and_return(rev_parse_command)
+      allow(rev_parse_command).to receive(:call).with(commit, verify: true).and_return(command_result("#{resolved}\n"))
+      allow(rev_parse_command).to receive(:call).with("#{resolved}^{commit}", verify: true)
+                                                .and_return(command_result("#{oid}\n"))
       allow(Git::Commands::Stash::Store).to receive(:new).with(execution_context).and_return(store_command)
       allow(store_command).to receive(:call).and_return(store_result)
       allow(list_command).to receive(:call).with(no_args).and_return(command_result('fixture'))
       allow(Git::Parsers::Stash).to receive(:parse_list).with('fixture').and_return([stored_entry])
     end
 
-    it 'stores the commit then lists the stash entries to return the new top entry' do
-      expect(store_command).to receive(:call).with(commit).and_return(store_result).ordered
+    it 'resolves the commit, peels it to a commit id, stores the id, then lists the stash entries' do
+      expect(rev_parse_command).to receive(:call).with(commit, verify: true)
+                                                 .and_return(command_result("#{oid}\n")).ordered
+      expect(rev_parse_command).to receive(:call).with("#{oid}^{commit}", verify: true)
+                                                 .and_return(command_result("#{oid}\n")).ordered
+      expect(store_command).to receive(:call).with(oid).and_return(store_result).ordered
       expect(list_command).to receive(:call).with(no_args).and_return(command_result('fixture')).ordered
       expect(result).to eq(stored_entry)
+    end
+
+    context 'when another entry is above the stored one in the listing' do
+      let(:other_entry) { build_stash_info(index: 0, oid: 'e' * 40) }
+
+      before do
+        allow(Git::Parsers::Stash).to receive(:parse_list).with('fixture').and_return([other_entry, stored_entry])
+      end
+
+      it 'returns the entry whose oid matches the resolved commit' do
+        expect(result).to eq(stored_entry)
+      end
+    end
+
+    context 'when the commit is a ref that names the stash commit' do
+      let(:commit) { 'refs/tmp/wip' }
+
+      it 'passes the resolved object id, not the ref, to the store command' do
+        expect(store_command).to receive(:call).with(oid).and_return(store_result)
+        result
+      end
+    end
+
+    context 'when the commit is an annotated tag' do
+      let(:commit) { 'wip' }
+      let(:resolved) { 't' * 40 }
+
+      it 'passes the id of the tagged commit, not the tag object, to the store command' do
+        expect(store_command).to receive(:call).with(oid).and_return(store_result)
+        result
+      end
+    end
+
+    context 'when the commit is nil' do
+      let(:commit) { nil }
+
+      it 'raises ArgumentError without running git' do
+        expect(rev_parse_command).not_to receive(:call)
+        expect(store_command).not_to receive(:call)
+        expect { result }.to raise_error(ArgumentError, 'commit is required')
+      end
+    end
+
+    context 'when the commit does not resolve' do
+      let(:commit) { 'refs/nope' }
+
+      before do
+        allow(rev_parse_command).to receive(:call).with('refs/nope', verify: true)
+                                                  .and_raise(Git::FailedError, command_result('', exitstatus: 128))
+      end
+
+      it 'raises Git::FailedError without running the store command' do
+        expect(store_command).not_to receive(:call)
+        expect { result }.to raise_error(Git::FailedError)
+      end
+    end
+
+    context 'when the commit resolves to an object that does not peel to a commit' do
+      let(:commit) { 'HEAD^{tree}' }
+      let(:resolved) { 'a' * 40 }
+
+      before do
+        allow(rev_parse_command).to receive(:call).with("#{resolved}^{commit}", verify: true)
+                                                  .and_raise(Git::FailedError, command_result('', exitstatus: 128))
+      end
+
+      it 'raises Git::FailedError without running the store command' do
+        expect(store_command).not_to receive(:call)
+        expect { result }.to raise_error(Git::FailedError)
+      end
+    end
+
+    context 'when the listing has no entry for the commit' do
+      before do
+        allow(Git::Parsers::Stash).to receive(:parse_list).with('fixture').and_return([])
+      end
+
+      it 'raises Git::UnexpectedResultError naming the commit' do
+        expect { result }.to raise_error(Git::UnexpectedResultError, /#{commit}/)
+      end
     end
 
     context 'with the :message and :quiet options' do
@@ -678,7 +769,7 @@ RSpec.describe Git::Repository::Stashing do
 
       it 'forwards the options to the store command' do
         expect(store_command).to(
-          receive(:call).with(commit, message: 'restored work', quiet: true).and_return(store_result)
+          receive(:call).with(oid, message: 'restored work', quiet: true).and_return(store_result)
         )
         result
       end
@@ -689,7 +780,7 @@ RSpec.describe Git::Repository::Stashing do
         message: 'restored work', m: 'restored work', quiet: true, q: true
       }.each do |key, value|
         it "forwards #{key.inspect} to the store command" do
-          expect(store_command).to receive(:call).with(commit, key => value).and_return(store_result)
+          expect(store_command).to receive(:call).with(oid, key => value).and_return(store_result)
           described_instance.stash_store(commit, key => value)
         end
       end
@@ -698,7 +789,7 @@ RSpec.describe Git::Repository::Stashing do
     context 'with the options in a positional Hash (ADR-0005 call shape)' do
       it 'forwards the Hash as options' do
         opts = { message: 'restored work' }
-        expect(store_command).to receive(:call).with(commit, message: 'restored work').and_return(store_result)
+        expect(store_command).to receive(:call).with(oid, message: 'restored work').and_return(store_result)
         described_instance.stash_store(commit, opts)
       end
     end
@@ -710,7 +801,8 @@ RSpec.describe Git::Repository::Stashing do
         expect { result }.to raise_error(ArgumentError, /Unknown options: bogus/)
       end
 
-      it 'does not store or list' do
+      it 'does not resolve, store, or list' do
+        expect(rev_parse_command).not_to receive(:call)
         expect(store_command).not_to receive(:call)
         expect(list_command).not_to receive(:call)
         expect { result }.to raise_error(ArgumentError, /Unknown options: bogus/)
