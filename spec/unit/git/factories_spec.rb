@@ -235,6 +235,28 @@ RSpec.describe Git::Factories do
         expect(clone_command).to have_received(:call).with(repository_url, nil, chdir: '/output')
       end
 
+      context 'with a relative :index option' do
+        let(:options) { { chdir: '/output', index: 'scratch.index' } }
+
+        it 'prefixes the index with chdir' do
+          repository
+          expect(Git::PathResolver).to(
+            have_received(:resolve_paths).with(working_directory: '/output/ruby-git', index: '/output/scratch.index')
+          )
+        end
+      end
+
+      context 'with an absolute :index option' do
+        let(:options) { { chdir: '/output', index: '/abs/scratch.index' } }
+
+        it 'uses the absolute path as-is (ignores :chdir)' do
+          repository
+          expect(Git::PathResolver).to(
+            have_received(:resolve_paths).with(working_directory: '/output/ruby-git', index: '/abs/scratch.index')
+          )
+        end
+      end
+
       context 'when the reported clone directory is absolute' do
         let(:clone_stderr) { "Cloning into '/abs/path'...\n" }
 

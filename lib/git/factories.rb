@@ -153,6 +153,9 @@ module Git
     #
     # @option options [String, nil] :index a non-standard path to the index file
     #
+    #   A relative path is expanded against `:chdir` when given, like
+    #   `directory`, and against the process working directory otherwise.
+    #
     # @option options [String, Pathname, nil] :chdir run `git clone` from within
     #   this directory
     #
@@ -162,6 +165,9 @@ module Git
     # @raise [ArgumentError] if unsupported options are provided
     #
     # @raise [Git::FailedError] if git exits with a non-zero exit status
+    #
+    # @raise [Git::Error] if a filesystem call made while resolving the paths
+    #   fails
     #
     # @raise [Git::UnexpectedResultError] if the cloned directory cannot be
     #   determined from git's output
@@ -208,7 +214,9 @@ module Git
     #
     # @option options [String, nil] :repository path for the `.git` directory
     #
-    #   Writes a gitfile in the working tree. Alias: `:separate_git_dir`.
+    #   Writes a gitfile in the working tree. Alias: `:separate_git_dir`. A
+    #   relative path is expanded against the process working directory, as
+    #   `git init --separate-git-dir` does.
     #
     # @option options [String, nil] :separate_git_dir alias for `:repository`
     #
@@ -229,11 +237,15 @@ module Git
     # @option options [String, nil] :index custom index path for the returned
     #   repository
     #
+    #   A relative path is expanded against the process working directory.
     #   Ignored when `:bare` is `true`.
     #
     # @return [Git::Repository] a repository bound to the newly initialized repository
     #
     # @raise [Git::FailedError] if git exits with a non-zero exit status
+    #
+    # @raise [Git::Error] if a filesystem call made while resolving the paths
+    #   fails
     #
     # @note If git exits non-zero after it starts writing, whatever it wrote is
     #   left in place: `directory` when git created it, and a git directory
@@ -268,9 +280,12 @@ module Git
     #   `.git` directory
     #
     #   When given, `working_dir` is used as-is (the working tree root is not
-    #   auto-detected).
+    #   auto-detected). A relative path is expanded against the process working
+    #   directory, not against `working_dir`.
     #
     # @option options [String, nil] :index a non-standard path to the index file
+    #
+    #   A relative path is expanded against the process working directory.
     #
     # @option options [Logger, nil] :log logger used for git operations
     #
@@ -419,10 +434,26 @@ module Git
     def resolve_paths_from_clone_result(clone_result, opts, context_opts)
       clone_dir, cloned_bare = parse_clone_stderr(clone_result.stderr)
       chdir = opts[:chdir]
-      clone_dir = File.join(chdir, clone_dir) if chdir && !Pathname.new(clone_dir).absolute?
+      clone_dir = prefix_with_chdir(clone_dir, chdir)
+      index = prefix_with_chdir(context_opts[:index], chdir)
 
       bare = opts[:bare] || opts[:mirror] || cloned_bare
-      resolve_clone_paths(clone_dir, bare, context_opts[:index])
+      resolve_clone_paths(clone_dir, bare, index)
+    end
+
+    # Join a relative path onto the `:chdir` directory git ran in
+    #
+    # @param path [String, nil] the path to prefix
+    #
+    # @param chdir [String, Pathname, nil] the directory git ran in, or `nil`
+    #
+    # @return [String, nil] `path` prefixed with `chdir` when both are given and
+    #   `path` is relative; otherwise `path` unchanged
+    #
+    def prefix_with_chdir(path, chdir)
+      return path if path.nil? || chdir.nil? || Pathname.new(path).absolute?
+
+      File.join(chdir, path)
     end
 
     # Build repository construction options from clone context options
