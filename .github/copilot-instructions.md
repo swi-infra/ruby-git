@@ -12,8 +12,8 @@ Durable decisions (design, policy, process) are recorded as ADRs in `docs/adr/`.
 Read the ADRs covering an area before changing it, and flag any contradiction
 between a change and an ADR rather than silently overriding the decision.
 
-This project enforces Conventional Commits. See `.commitlintrc.yml` for allowed types
-and scopes. Never use `#` in the commit message body. Doing so will cause
+This project enforces Conventional Commits. See `commitlint.config.mjs` for allowed
+types and scopes. Never use `#` in the commit message body. Doing so will cause
 commitlint to incorrectly parse the commit message body as a footer. If you need to
 refer to an issue in the body, use `issue 999` instead of `issue #999`. It is still
 fine to use `#` in footer values such as `Closes: #999` or `Refs: #999`.

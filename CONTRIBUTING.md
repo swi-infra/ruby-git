@@ -872,7 +872,7 @@ indicates the type of change and `description` is your usual commit message (wit
 some limitations).
 
 - Types include: `feat`, `fix`, `docs`, `test`, `refactor`, and `chore`. See the full
-  list of types supported in [.commitlintrc.yml](.commitlintrc.yml).
+  list of types supported in [commitlint.config.mjs](commitlint.config.mjs).
 - The description must (1) not start with an upper case letter, (2) be no more than
   100 characters, and (3) not end with punctuation.
 
@@ -911,6 +911,10 @@ The full conventional commit format is:
 The `BREAKING CHANGE:` footer flags a backward incompatible change even if the
 type is not marked with an exclamation mark. Other footers are allowed
 but not acted upon.
+
+A `BREAKING CHANGE:` footer must come out of release-please's stricter parser as you
+wrote it; the `breaking-change-footer-intact` rule in `commitlint.config.mjs` checks
+this, and its error shows what release-please would publish and says how to rewrap.
 
 See [the Conventional Commits
 specification](https://www.conventionalcommits.org/en/v1.0.0/) for more details.

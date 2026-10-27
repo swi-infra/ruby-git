@@ -2,6 +2,7 @@
   "devDependencies": {
     "@commitlint/cli": "^19.8.0",
     "@commitlint/config-conventional": "^19.8.0",
+    "@conventional-commits/parser": "^0.4.1",
     "husky": "^9.1.7"
   },
   "scripts": {
