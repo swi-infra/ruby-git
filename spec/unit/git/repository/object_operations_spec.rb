@@ -961,6 +961,20 @@ RSpec.describe Git::Repository::ObjectOperations do
       end
     end
 
+    context 'with a ~-prefixed file path' do
+      subject(:result) { described_instance.archive('HEAD', '~/out.zip') }
+
+      include_context 'with a temporary home directory'
+
+      it 'returns the path expanded to the home directory' do
+        expect(result).to eq(File.join(home_dir, 'out.zip'))
+      end
+
+      it 'writes the archive under the home directory' do
+        expect { result }.to change { File.exist?(File.join(home_dir, 'out.zip')) }.from(false).to(true)
+      end
+    end
+
     context 'when a step fails after a staging file is created' do
       let(:staging_paths) { [] }
 

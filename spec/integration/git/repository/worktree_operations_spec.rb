@@ -21,6 +21,10 @@ require 'git/repository/worktree_operations'
 # worktree_remove, worktree_move, worktree_lock, worktree_unlock, and
 # worktree_repair accept a Git::WorktreeInfo in place of a path; their integration
 # tests verify that a Git::WorktreeInfo argument reaches git as the worktree path.
+#
+# Expanding a leading ~ in the path arguments of these methods is pure-Ruby
+# pre-processing that the unit specs cover, and the examples below already hand
+# git an absolute path.
 
 RSpec.describe Git::Repository::WorktreeOperations, :integration do
   include_context 'in an empty repository'

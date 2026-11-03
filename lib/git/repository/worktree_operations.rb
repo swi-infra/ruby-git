@@ -2,6 +2,7 @@
 
 require 'git/commands/worktree'
 require 'git/parsers/worktree'
+require 'git/path_resolver'
 require 'git/worktree_info'
 
 module Git
@@ -61,7 +62,8 @@ module Git
       #   #=> "4bef5ab0c8e7c19c6be2c0f55ccd45eec1f3d32a"
       #
       # @param dir [String] filesystem path for the new worktree, absolute or
-      #   relative to the current directory
+      #   relative to the current directory; a leading `~` is expanded to the
+      #   home directory
       #
       # @param commitish [String, nil] branch, tag, or commit to check out
       #
@@ -69,6 +71,9 @@ module Git
       #   component, creating it when no such branch exists
       #
       # @return [Git::WorktreeInfo] the new worktree's entry from {#worktree_list}
+      #
+      # @raise [ArgumentError] if `dir` begins with `~user` for a user that does
+      #   not exist, or with `~` when no home directory can be determined
       #
       # @raise [Git::FailedError] if git exits with a non-zero exit status
       #
@@ -84,6 +89,7 @@ module Git
       # @see https://git-scm.com/docs/git-worktree git-worktree documentation
       #
       def worktree_add(dir, commitish = nil)
+        dir = Private.expand_path(dir)
         args = [dir]
         args << commitish unless commitish.nil?
 
@@ -106,17 +112,23 @@ module Git
       #   repo.worktree_remove(info)
       #
       # @param worktree [String, Git::WorktreeInfo] the path of the worktree to
-      #   remove, or its entry from {#worktree_list}
+      #   remove, or its entry from {#worktree_list}; a leading `~` in a path is
+      #   expanded to the home directory, and any other String, such as the
+      #   unique last path component git accepts in place of the path, is
+      #   passed to git as given
       #
       # @return [String] the output from the git worktree remove command
       #   (typically empty)
+      #
+      # @raise [ArgumentError] if `worktree` begins with `~user` for a user that
+      #   does not exist, or with `~` when no home directory can be determined
       #
       # @raise [Git::FailedError] if git exits with a non-zero exit status
       #
       # @see https://git-scm.com/docs/git-worktree git-worktree documentation
       #
       def worktree_remove(worktree)
-        Git::Commands::Worktree::Remove.new(@execution_context).call(worktree.to_s).stdout
+        Git::Commands::Worktree::Remove.new(@execution_context).call(Private.expand_path(worktree)).stdout
       end
 
       # Move a linked worktree to a new location
@@ -128,9 +140,13 @@ module Git
       #   repo.worktree_move('/tmp/feature', '/tmp/feature-moved', force: 2)
       #
       # @param worktree [String, Git::WorktreeInfo] the path of the worktree to
-      #   move, or its entry from {#worktree_list}
+      #   move, or its entry from {#worktree_list}; a leading `~` in a path is
+      #   expanded to the home directory, and any other String, such as the
+      #   unique last path component git accepts in place of the path, is
+      #   passed to git as given
       #
-      # @param new_path [String] the destination path
+      # @param new_path [String] the destination path; a leading `~` is
+      #   expanded to the home directory
       #
       # @param opts [Hash] options for the move
       #
@@ -143,12 +159,18 @@ module Git
       #
       # @raise [ArgumentError] if unsupported options are provided
       #
+      # @raise [ArgumentError] if `worktree` or `new_path` begins with `~user`
+      #   for a user that does not exist, or with `~` when no home directory can
+      #   be determined
+      #
       # @raise [Git::FailedError] if git exits with a non-zero exit status
       #
       # @see https://git-scm.com/docs/git-worktree git-worktree documentation
       #
       def worktree_move(worktree, new_path, opts = {})
-        Git::Commands::Worktree::Move.new(@execution_context).call(worktree.to_s, new_path, **opts).stdout
+        Git::Commands::Worktree::Move.new(@execution_context).call(
+          Private.expand_path(worktree), Private.expand_path(new_path), **opts
+        ).stdout
       end
 
       # Lock a linked worktree so that `git worktree prune` leaves it alone
@@ -163,7 +185,10 @@ module Git
       #   repo.worktree_lock('/tmp/feature', reason: 'on an external drive')
       #
       # @param worktree [String, Git::WorktreeInfo] the path of the worktree to
-      #   lock, or its entry from {#worktree_list}
+      #   lock, or its entry from {#worktree_list}; a leading `~` in a path is
+      #   expanded to the home directory, and any other String, such as the
+      #   unique last path component git accepts in place of the path, is
+      #   passed to git as given
       #
       # @param opts [Hash] options for the lock
       #
@@ -175,12 +200,15 @@ module Git
       #
       # @raise [ArgumentError] if unsupported options are provided
       #
+      # @raise [ArgumentError] if `worktree` begins with `~user` for a user that
+      #   does not exist, or with `~` when no home directory can be determined
+      #
       # @raise [Git::FailedError] if git exits with a non-zero exit status
       #
       # @see https://git-scm.com/docs/git-worktree git-worktree documentation
       #
       def worktree_lock(worktree, opts = {})
-        Git::Commands::Worktree::Lock.new(@execution_context).call(worktree.to_s, **opts).stdout
+        Git::Commands::Worktree::Lock.new(@execution_context).call(Private.expand_path(worktree), **opts).stdout
       end
 
       # Unlock a linked worktree
@@ -189,17 +217,23 @@ module Git
       #   repo.worktree_unlock('/tmp/feature')
       #
       # @param worktree [String, Git::WorktreeInfo] the path of the worktree to
-      #   unlock, or its entry from {#worktree_list}
+      #   unlock, or its entry from {#worktree_list}; a leading `~` in a path is
+      #   expanded to the home directory, and any other String, such as the
+      #   unique last path component git accepts in place of the path, is
+      #   passed to git as given
       #
       # @return [String] the output from the git worktree unlock command
       #   (typically empty)
+      #
+      # @raise [ArgumentError] if `worktree` begins with `~user` for a user that
+      #   does not exist, or with `~` when no home directory can be determined
       #
       # @raise [Git::FailedError] if git exits with a non-zero exit status
       #
       # @see https://git-scm.com/docs/git-worktree git-worktree documentation
       #
       def worktree_unlock(worktree)
-        Git::Commands::Worktree::Unlock.new(@execution_context).call(worktree.to_s).stdout
+        Git::Commands::Worktree::Unlock.new(@execution_context).call(Private.expand_path(worktree)).stdout
       end
 
       # Repair the links between the repository and its linked worktrees
@@ -216,17 +250,23 @@ module Git
       #   repo.worktree_repair('/new/path/to/feature')
       #
       # @param paths [Array<String, Git::WorktreeInfo>] the current paths of the
-      #   worktrees to repair, or their entries from {#worktree_list}
+      #   worktrees to repair, or their entries from {#worktree_list}; a leading
+      #   `~` in a path is expanded to the home directory
       #
       # @return [String] the output from the git worktree repair command, which
       #   reports each repair made
+      #
+      # @raise [ArgumentError] if a path begins with `~user` for a user that does
+      #   not exist, or with `~` when no home directory can be determined
       #
       # @raise [Git::FailedError] if git exits with a non-zero exit status
       #
       # @see https://git-scm.com/docs/git-worktree git-worktree documentation
       #
       def worktree_repair(*paths)
-        Git::Commands::Worktree::Repair.new(@execution_context).call(*paths.map(&:to_s)).stdout
+        Git::Commands::Worktree::Repair.new(@execution_context).call(
+          *paths.map { |path| Private.expand_path(path) }
+        ).stdout
       end
 
       # Prune stale worktree administrative files
@@ -247,6 +287,34 @@ module Git
       def worktree_prune
         Git::Commands::Worktree::Prune.new(@execution_context).call.stdout
       end
+
+      # Private helpers local to {Git::Repository::WorktreeOperations}
+      #
+      # @api private
+      #
+      module Private
+        module_function
+
+        # Convert a worktree argument to the path handed to git
+        #
+        # A leading `~` is expanded to the home directory, as a shell would. Any
+        # other value, including a relative path or the unique name git accepts
+        # in place of a worktree's path, is returned as given. See ADR-0011.
+        #
+        # @param path [String, Git::WorktreeInfo] a path, a worktree name, or a
+        #   worktree's entry from {WorktreeOperations#worktree_list}
+        #
+        # @return [String] the value to hand to git
+        #
+        # @raise [ArgumentError] if the path begins with `~user` for a user that
+        #   does not exist, or with `~` when no home directory can be determined
+        #
+        def expand_path(path)
+          Git::PathResolver.expand_home(path.to_s)
+        end
+      end
+
+      private_constant :Private
     end
   end
 end

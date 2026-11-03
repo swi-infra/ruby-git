@@ -12,6 +12,10 @@ require 'git/repository/staging'
 #   - #apply and #apply_mail guard on File.exist? before calling git
 #   - #read_tree owns option whitelisting and maps opts={} to command kwargs
 #
+# Expanding a leading ~ in the patch path of #apply and #apply_mail is pure-Ruby
+# pre-processing that the unit specs cover, and the examples below already hand
+# git an absolute patch path.
+#
 # Single-command delegators whose only facade behavior is option whitelisting
 # (#add, #reset, #rm, #clean) are covered by underlying command integration specs:
 #   spec/integration/git/commands/add_spec.rb

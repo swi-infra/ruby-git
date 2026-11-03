@@ -10,6 +10,7 @@ require 'git/commands/read_tree'
 require 'git/commands/reset'
 require 'git/commands/rm'
 require 'git/escaped_path'
+require 'git/path_resolver'
 require 'git/repository/shared_private'
 
 module Git
@@ -101,15 +102,20 @@ module Git
       # @example Apply a patch to the working tree
       #   repo.apply('fix.patch')
       #
-      # @param file [String] path to the patch file to apply
+      # @param file [String] path to the patch file to apply; a leading `~` is
+      #   expanded to the home directory
       #
       # @return [String] git's stdout (usually empty on success)
       #
       # @return [nil] when `file` does not exist
       #
+      # @raise [ArgumentError] when `file` begins with `~user` for a user that
+      #   does not exist, or with `~` when no home directory can be determined
+      #
       # @raise [Git::FailedError] when git exits with a non-zero exit status
       #
       def apply(file)
+        file = Git::PathResolver.expand_home(file)
         return unless File.exist?(file)
 
         Git::Commands::Apply.new(@execution_context).call(file, chdir: @execution_context.git_work_dir).stdout
@@ -124,11 +130,15 @@ module Git
       # @example Apply patches from a mailbox
       #   repo.apply_mail('patches.mbox')
       #
-      # @param file [String] path to the mbox patch file to apply
+      # @param file [String] path to the mbox patch file to apply; a leading `~` is
+      #   expanded to the home directory
       #
       # @return [String] git's stdout (usually empty on success)
       #
       # @return [nil] when `file` does not exist
+      #
+      # @raise [ArgumentError] when `file` begins with `~user` for a user that
+      #   does not exist, or with `~` when no home directory can be determined
       #
       # @raise [Git::FailedError] when git exits with a non-zero exit status
       #
@@ -138,6 +148,7 @@ module Git
       #   session removes them again.
       #
       def apply_mail(file)
+        file = Git::PathResolver.expand_home(file)
         return unless File.exist?(file)
 
         Git::Commands::Am::Apply.new(@execution_context).call(file, chdir: @execution_context.git_work_dir).stdout

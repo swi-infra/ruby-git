@@ -16,10 +16,12 @@ after `git` at a shell prompt in the process working directory. Where git alread
 `~` itself, as its transport does for a local repository path given to `git ls-remote`,
 ruby-git leaves the value alone.
 
-There is one exception. A method that runs git in a directory other than the process
-working directory, as `apply` and `apply_mail` run git in the working tree, expands a
-relative path against the process working directory, so the path keeps the meaning it
-has at the caller's prompt.
+`apply` and `apply_mail` run git in the working tree, not the process working directory,
+so a relative patch path does not mean to git what it means at the caller's prompt.
+This record does not decide whether ruby-git should make such a path absolute first.
+Doing so means rewriting a path without changing which file it names, through symlinks,
+`..`, trailing separators, and encodings, and issue 1958 takes that up together with the
+factory methods.
 
 ## Considered options
 

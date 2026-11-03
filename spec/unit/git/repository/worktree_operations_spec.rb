@@ -81,6 +81,13 @@ RSpec.describe Git::Repository::WorktreeOperations do
     let(:commitish) { nil }
     let(:add_command) { instance_double(Git::Commands::Worktree::Add) }
     let(:add_result) { command_result("HEAD is now at b8c6320 Add feature\n") }
+    let(:list_command) { instance_double(Git::Commands::Worktree::List) }
+    let(:list_result) { command_result('porcelain output') }
+    let(:listed_worktrees) { [main_info, added_info] }
+
+    # The path the lookup must compare the listed entry against: dir itself,
+    # unless a context passes a dir that the facade expands first
+    let(:lookup_dir) { dir }
 
     # git records the resolved path, which differs from dir when dir goes
     # through a symlink (/tmp on macOS) or differs in case, so the lookup must
@@ -94,9 +101,11 @@ RSpec.describe Git::Repository::WorktreeOperations do
     before do
       allow(Git::Commands::Worktree::Add).to receive(:new).with(execution_context).and_return(add_command)
       allow(add_command).to receive(:call).and_return(add_result)
+      allow(Git::Commands::Worktree::List).to receive(:new).with(execution_context).and_return(list_command)
+      allow(list_command).to receive(:call).with(porcelain: true).and_return(list_result)
+      allow(Git::Parsers::Worktree).to receive(:parse_list).with('porcelain output').and_return(listed_worktrees)
       allow(File).to receive(:identical?).and_return(false)
-      allow(File).to receive(:identical?).with('/private/tmp/feature', dir).and_return(true)
-      allow(described_instance).to receive(:worktree_list).and_return([main_info, added_info])
+      allow(File).to receive(:identical?).with('/private/tmp/feature', lookup_dir).and_return(true)
     end
 
     it 'constructs Git::Commands::Worktree::Add with the execution context' do
@@ -106,7 +115,7 @@ RSpec.describe Git::Repository::WorktreeOperations do
 
     it 'runs the add before listing the worktrees' do
       expect(add_command).to receive(:call).with(dir).and_return(add_result).ordered
-      expect(described_instance).to receive(:worktree_list).and_return([main_info, added_info]).ordered
+      expect(list_command).to receive(:call).with(porcelain: true).and_return(list_result).ordered
 
       described_instance.worktree_add(dir)
     end
@@ -131,10 +140,24 @@ RSpec.describe Git::Repository::WorktreeOperations do
       end
     end
 
-    context 'when the listing has no entry for the directory' do
-      before do
-        allow(described_instance).to receive(:worktree_list).and_return([main_info])
+    context 'when given a ~-prefixed directory' do
+      include_context 'with a temporary home directory'
+
+      let(:dir) { '~/feature' }
+      let(:lookup_dir) { File.join(home_dir, 'feature') }
+
+      it 'calls #call with the directory expanded to the home directory' do
+        expect(add_command).to receive(:call).with(File.join(home_dir, 'feature')).and_return(add_result)
+        result
       end
+
+      it 'returns the Git::WorktreeInfo whose path is the expanded directory' do
+        expect(result).to eq(added_info)
+      end
+    end
+
+    context 'when the listing has no entry for the directory' do
+      let(:listed_worktrees) { [main_info] }
 
       it 'raises Git::UnexpectedResultError naming the directory' do
         expect { result }.to raise_error(Git::UnexpectedResultError, %r{/tmp/feature})
@@ -149,8 +172,8 @@ RSpec.describe Git::Repository::WorktreeOperations do
       end
 
       it 'raises Git::FailedError without listing the worktrees' do
-        expect(described_instance).not_to receive(:worktree_list)
-        expect { result }.to raise_error(Git::FailedError)
+        expect(list_command).not_to receive(:call)
+        expect { result }.to raise_error(Git::FailedError, /already exists/)
       end
     end
   end
@@ -191,6 +214,17 @@ RSpec.describe Git::Repository::WorktreeOperations do
         result
       end
     end
+
+    context 'when given a ~-prefixed path' do
+      include_context 'with a temporary home directory'
+
+      let(:worktree) { '~/feature' }
+
+      it 'calls #call with the path expanded to the home directory' do
+        expect(remove_command).to receive(:call).with(File.join(home_dir, 'feature')).and_return(remove_result)
+        result
+      end
+    end
   end
 
   describe '#worktree_move' do
@@ -227,6 +261,22 @@ RSpec.describe Git::Repository::WorktreeOperations do
 
       it 'calls #call with the path of the worktree and the new path' do
         expect(move_command).to receive(:call).with('/tmp/feature', '/tmp/feature-moved').and_return(move_result)
+        result
+      end
+    end
+
+    context 'when given ~-prefixed paths' do
+      include_context 'with a temporary home directory'
+
+      let(:worktree) { '~/feature' }
+      let(:new_path) { '~/feature-moved' }
+
+      it 'calls #call with both paths expanded to the home directory' do
+        expect(move_command).to(
+          receive(:call)
+            .with(File.join(home_dir, 'feature'), File.join(home_dir, 'feature-moved'))
+            .and_return(move_result)
+        )
         result
       end
     end
@@ -287,6 +337,28 @@ RSpec.describe Git::Repository::WorktreeOperations do
       end
     end
 
+    context 'when given a ~-prefixed path' do
+      include_context 'with a temporary home directory'
+
+      let(:worktree) { '~/feature' }
+
+      it 'calls #call with the path expanded to the home directory' do
+        expect(lock_command).to receive(:call).with(File.join(home_dir, 'feature')).and_return(lock_result)
+        result
+      end
+    end
+
+    # git accepts the unique last path component of a worktree in place of its
+    # path, so only a leading ~ is expanded (ADR-0011)
+    context 'when given the unique name of a worktree' do
+      let(:worktree) { 'feature' }
+
+      it 'calls #call with the name unchanged' do
+        expect(lock_command).to receive(:call).with('feature').and_return(lock_result)
+        result
+      end
+    end
+
     context 'with the reason option' do
       it 'forwards reason: to #call' do
         expect(lock_command).to receive(:call).with('/tmp/feature', reason: 'on NFS share').and_return(lock_result)
@@ -338,6 +410,17 @@ RSpec.describe Git::Repository::WorktreeOperations do
         result
       end
     end
+
+    context 'when given a ~-prefixed path' do
+      include_context 'with a temporary home directory'
+
+      let(:worktree) { '~/feature' }
+
+      it 'calls #call with the path expanded to the home directory' do
+        expect(unlock_command).to receive(:call).with(File.join(home_dir, 'feature')).and_return(unlock_result)
+        result
+      end
+    end
   end
 
   describe '#worktree_repair' do
@@ -376,6 +459,15 @@ RSpec.describe Git::Repository::WorktreeOperations do
       it 'calls #call with the path of each worktree' do
         expect(repair_command).to receive(:call).with('/tmp/other', '/tmp/feature').and_return(repair_result)
         described_instance.worktree_repair('/tmp/other', linked_info)
+      end
+    end
+
+    context 'when given a ~-prefixed path' do
+      include_context 'with a temporary home directory'
+
+      it 'calls #call with the path expanded to the home directory' do
+        expect(repair_command).to receive(:call).with(File.join(home_dir, 'feature')).and_return(repair_result)
+        described_instance.worktree_repair('~/feature')
       end
     end
   end

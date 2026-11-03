@@ -460,6 +460,22 @@ RSpec.describe Git::Repository::Staging do
       end
     end
 
+    context 'when an existing file is given by a ~-prefixed path' do
+      include_context 'with a temporary home directory'
+
+      let(:patch_file) { '~/fix.patch' }
+
+      before do
+        allow(File).to receive(:exist?).with(File.join(home_dir, 'fix.patch')).and_return(true)
+      end
+
+      it 'delegates to Git::Commands::Apply#call with the path expanded to the home directory' do
+        expect(apply_command).to receive(:call)
+          .with(File.join(home_dir, 'fix.patch'), chdir: work_dir).and_return(apply_result)
+        result
+      end
+    end
+
     context 'when the file does not exist' do
       before do
         allow(File).to receive(:exist?).with(patch_file).and_return(false)
@@ -510,6 +526,22 @@ RSpec.describe Git::Repository::Staging do
         allow(am_apply_command).to receive(:call)
           .with(mbox_file, chdir: work_dir).and_return(command_result('applied mail'))
         expect(result).to eq('applied mail')
+      end
+    end
+
+    context 'when an existing file is given by a ~-prefixed path' do
+      include_context 'with a temporary home directory'
+
+      let(:mbox_file) { '~/patches.mbox' }
+
+      before do
+        allow(File).to receive(:exist?).with(File.join(home_dir, 'patches.mbox')).and_return(true)
+      end
+
+      it 'delegates to Git::Commands::Am::Apply#call with the path expanded to the home directory' do
+        expect(am_apply_command).to receive(:call)
+          .with(File.join(home_dir, 'patches.mbox'), chdir: work_dir).and_return(am_apply_result)
+        result
       end
     end
 

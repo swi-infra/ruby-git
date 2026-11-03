@@ -16,6 +16,7 @@ require 'git/parsers/cat_file'
 require 'git/parsers/grep'
 require 'git/parsers/ls_tree'
 require 'git/parsers/tag'
+require 'git/path_resolver'
 require 'git/repository/shared_private'
 require 'git/system_call_guard'
 require 'git/escaped_path'
@@ -560,6 +561,10 @@ module Git
       # @param file [String, nil] (nil) destination file path; when `nil`, a
       #   unique temporary file is created and its path is returned
       #
+      #   A leading `~` is expanded to the home directory, and the expanded path
+      #   is returned. A relative path is resolved against the process working
+      #   directory and returned as given.
+      #
       # @param opts [Hash] archive options
       #
       # @option opts [String] :format ('zip') archive format — `'tar'`, `'zip'`,
@@ -584,6 +589,9 @@ module Git
       #
       # @raise [ArgumentError] if `file` is an existing directory
       #
+      # @raise [ArgumentError] if `file` begins with `~user` for a user that does
+      #   not exist, or with `~` when no home directory can be determined
+      #
       # @raise [Git::FailedError] if git exits with a non-zero exit status
       #
       # @raise [Git::Error] if the archive file cannot be written or gzip
@@ -596,6 +604,7 @@ module Git
       #
       def archive(treeish, file = nil, opts = {})
         SharedPrivate.assert_valid_opts!(ARCHIVE_ALLOWED_OPTS, **opts)
+        file = Git::PathResolver.expand_home(file)
         raise ArgumentError, "#{file.inspect} is a directory" if file && File.directory?(file)
 
         Git::SystemCallGuard.call('Failed to write the archive') do
